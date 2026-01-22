@@ -2,6 +2,14 @@
 
 A Claude Skill for cryptocurrency trading analysis.
 
+## Quick Install
+
+```bash
+npx @0xrikt/crypto-trading-advisor
+```
+
+This will download the skill file and guide you through installation.
+
 ## What is this?
 
 This is a [Claude Skill](https://claude.ai) that helps Claude provide professional crypto trading analysis when users ask questions like:
@@ -19,9 +27,12 @@ This is a [Claude Skill](https://claude.ai) that helps Claude provide profession
 
 **3. Output principles** — Lead with conclusion, be specific with data, talk like a trader not an AI.
 
-## Installation
+## Manual Installation
 
-Download `crypto-trading-advisor.skill` and upload it to Claude.
+1. Download `SKILL.md` from this repository
+2. Go to [Claude Settings → Skills](https://claude.ai/settings/skills)
+3. Click "Add Skill"
+4. Paste the content and save
 
 ## Example
 
