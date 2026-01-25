@@ -1448,41 +1448,45 @@ def generate_html_report(
             border-bottom: none;
         }}
         
-        /* Strategy Compact Layout - 3 columns */
+        /* Strategy Compact Layout - 3x2 uniform grid */
         .strategy-compact {{
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            grid-auto-rows: 1fr;
+            gap: 12px;
         }}
         
         @media (max-width: 900px) {{
-            .strategy-compact {{ grid-template-columns: 1fr 1fr; }}
+            .strategy-compact {{ grid-template-columns: repeat(2, 1fr); }}
         }}
         
         @media (max-width: 600px) {{
             .strategy-compact {{ grid-template-columns: 1fr; }}
         }}
         
-        .strategy-col {{
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }}
-        
         .strategy-block {{
             background: var(--bg-elevated);
             border-radius: 8px;
-            padding: 14px 16px;
-            flex: 1;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
         }}
         
         .strategy-block h4 {{
             font-size: 0.7rem;
             font-weight: 700;
             color: var(--text-muted);
-            margin-bottom: 10px;
+            margin-bottom: auto;
+            padding-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }}
+        
+        .signal-codes {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: auto;
         }}
         
         .param-row {{
@@ -1781,45 +1785,38 @@ def generate_html_report(
             </div>
             
             <div class="strategy-compact">
-                <!-- Column 1: Data + Capital -->
-                <div class="strategy-col">
-                    <div class="strategy-block">
-                        <h4>📊 DATA</h4>
-                        <div class="param-row"><span>Symbol</span><code>{config.get('symbol', 'BTC/USDT')}</code></div>
-                        <div class="param-row"><span>Timeframe</span><code>{config.get('timeframe', '4h')}</code></div>
-                        <div class="param-row"><span>Period</span><code>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</code></div>
-                    </div>
-                    <div class="strategy-block">
-                        <h4>💰 CAPITAL</h4>
-                        <div class="param-row"><span>Initial</span><code>${config.get('initial_capital', 10000):,.0f}</code></div>
-                        <div class="param-row"><span>Position</span><code>{config.get('position_size', 10)}%</code></div>
-                        <div class="param-row"><span>Fee</span><code>{config.get('commission', 0.1)}%</code></div>
-                    </div>
+                <!-- Row 1 -->
+                <div class="strategy-block">
+                    <h4>📊 DATA</h4>
+                    <div class="param-row"><span>Symbol</span><code>{config.get('symbol', 'BTC/USDT')}</code></div>
+                    <div class="param-row"><span>Timeframe</span><code>{config.get('timeframe', '4h')}</code></div>
+                    <div class="param-row"><span>Period</span><code>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</code></div>
                 </div>
-                <!-- Column 2: Entry + Exit -->
-                <div class="strategy-col">
-                    <div class="strategy-block signal-block entry">
-                        <h4>🟢 ENTRY</h4>
-                        {''.join(f'<code>{c}</code>' for c in config.get('entry_display', ['N/A']))}
-                    </div>
-                    <div class="strategy-block signal-block exit">
-                        <h4>🔴 EXIT</h4>
-                        {''.join(f'<code>{c}</code>' for c in config.get('exit_display', ['N/A']))}
-                    </div>
+                <div class="strategy-block signal-block entry">
+                    <h4>🟢 ENTRY</h4>
+                    <div class="signal-codes">{''.join(f'<code>{c}</code>' for c in config.get('entry_display', ['N/A']))}</div>
                 </div>
-                <!-- Column 3: Risk + Execution -->
-                <div class="strategy-col">
-                    <div class="strategy-block">
-                        <h4>⚠️ RISK</h4>
-                        <div class="param-row"><span>Stop Loss</span><code class="red">-{config.get('stop_loss', 5)}%</code></div>
-                        <div class="param-row"><span>Take Profit</span><code class="green">+{config.get('take_profit', 15)}%</code></div>
-                    </div>
-                    <div class="strategy-block">
-                        <h4>⚙️ EXECUTION</h4>
-                        <div class="param-row"><span>Leverage</span><code>1x</code></div>
-                        <div class="param-row"><span>Type</span><code>Market</code></div>
-                        <div class="param-row"><span>Side</span><code>Long</code></div>
-                    </div>
+                <div class="strategy-block">
+                    <h4>⚠️ RISK</h4>
+                    <div class="param-row"><span>Stop Loss</span><code class="red">-{config.get('stop_loss', 5)}%</code></div>
+                    <div class="param-row"><span>Take Profit</span><code class="green">+{config.get('take_profit', 15)}%</code></div>
+                </div>
+                <!-- Row 2 -->
+                <div class="strategy-block">
+                    <h4>💰 CAPITAL</h4>
+                    <div class="param-row"><span>Initial</span><code>${config.get('initial_capital', 10000):,.0f}</code></div>
+                    <div class="param-row"><span>Position</span><code>{config.get('position_size', 10)}%</code></div>
+                    <div class="param-row"><span>Fee</span><code>{config.get('commission', 0.1)}%</code></div>
+                </div>
+                <div class="strategy-block signal-block exit">
+                    <h4>🔴 EXIT</h4>
+                    <div class="signal-codes">{''.join(f'<code>{c}</code>' for c in config.get('exit_display', ['N/A']))}</div>
+                </div>
+                <div class="strategy-block">
+                    <h4>⚙️ EXECUTION</h4>
+                    <div class="param-row"><span>Leverage</span><code>1x</code></div>
+                    <div class="param-row"><span>Type</span><code>Market</code></div>
+                    <div class="param-row"><span>Side</span><code>Long</code></div>
                 </div>
             </div>
         </section>
