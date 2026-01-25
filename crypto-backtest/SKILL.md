@@ -163,6 +163,12 @@ Format:
 
 ### Step 3: Run Backtest
 
+**IMPORTANT**: Detect the user's language and pass the `--lang` parameter accordingly:
+- If user writes in Chinese → `--lang zh`
+- If user writes in English → `--lang en`
+
+This ensures the HTML report text matches the user's language.
+
 ```bash
 python src/backtest.py \
   --symbol "BTC/USDT" \
@@ -172,7 +178,8 @@ python src/backtest.py \
   --exit "rsi>50,price>bb_middle" \
   --stop-loss 8 \
   --take-profit 20 \
-  --output report.html
+  --output report.html \
+  --lang zh  # or --lang en based on user's language
 ```
 
 ### Step 4: Present Results with Insights
@@ -400,3 +407,25 @@ Conditions are comma-separated. Entry uses AND logic, Exit uses OR logic.
 - Smart DCA: `src/smart_dca.py`
 - Output reports: current working directory
 - Generated code: current working directory
+
+## Smart DCA Usage
+
+For DCA strategies, use the dedicated Smart DCA script:
+
+```bash
+python src/smart_dca.py \
+  --symbol "BTC/USDT" \
+  --days 1095 \
+  --base-amount 200 \
+  --frequency 7 \
+  --output smart_dca_report.html \
+  --lang zh  # or --lang en based on user's language
+```
+
+## Language Support
+
+**CRITICAL**: Always detect the user's language and pass the appropriate `--lang` parameter:
+- User writes in Chinese → `--lang zh` (report in Chinese)
+- User writes in English → `--lang en` (report in English)
+
+This ensures the generated HTML report matches the user's language preference.

@@ -11,11 +11,12 @@ Features:
 - Portfolio simulation with stop-loss/take-profit
 - Interactive Plotly HTML reports
 - Runnable Python strategy code generation
+- Multi-language support (en/zh)
 
 Usage:
     python backtest.py --symbol BTC/USDT --timeframe 4h --days 365 \
         --entry "rsi<30,price<sma50" --exit "rsi>70" \
-        --stop-loss 5 --take-profit 15 --output report.html
+        --stop-loss 5 --take-profit 15 --output report.html --lang en
 """
 
 import argparse
@@ -30,6 +31,100 @@ import ccxt
 import numpy as np
 import pandas as pd
 import pandas_ta as ta
+
+
+# ============================================================================
+# LANGUAGE LABELS
+# ============================================================================
+
+LABELS = {
+    'en': {
+        'title': 'Strategy Backtest Report',
+        'strategy_config': 'Strategy Configuration',
+        'symbol': 'Symbol',
+        'timeframe': 'Timeframe',
+        'period': 'Period',
+        'entry': 'Entry Conditions',
+        'exit': 'Exit Conditions',
+        'stop_loss': 'Stop Loss',
+        'take_profit': 'Take Profit',
+        'performance_metrics': 'Performance Metrics',
+        'total_return': 'Total Return',
+        'sharpe_ratio': 'Sharpe Ratio',
+        'max_drawdown': 'Max Drawdown',
+        'win_rate': 'Win Rate',
+        'total_trades': 'Total Trades',
+        'profit_factor': 'Profit Factor',
+        'avg_trade': 'Avg Trade',
+        'best_trade': 'Best Trade',
+        'worst_trade': 'Worst Trade',
+        'equity_curve': 'Equity Curve',
+        'price_signals': 'Price & Signals',
+        'trade_pnl': 'Trade P&L Distribution',
+        'indicators': 'Indicators',
+        'tagline': 'Validate your trading ideas in minutes',
+        'share_cta': 'Share your results to help others discover this tool!',
+        'generated': 'Generated on',
+        'disclaimer': 'Past performance ≠ future results',
+        'trade_table_title': 'Trade History',
+        'trade_no': '#',
+        'trade_entry_date': 'Entry Date',
+        'trade_exit_date': 'Exit Date',
+        'trade_type': 'Type',
+        'trade_entry_price': 'Entry Price',
+        'trade_exit_price': 'Exit Price',
+        'trade_pnl_label': 'P&L',
+        'buy': 'Buy',
+        'sell': 'Sell',
+        'entry_signal': 'Entry Signal',
+        'exit_signal': 'Exit Signal',
+        'price': 'Price',
+        'equity': 'Equity',
+    },
+    'zh': {
+        'title': '策略回测报告',
+        'strategy_config': '策略配置',
+        'symbol': '交易对',
+        'timeframe': '时间周期',
+        'period': '回测周期',
+        'entry': '入场条件',
+        'exit': '出场条件',
+        'stop_loss': '止损',
+        'take_profit': '止盈',
+        'performance_metrics': '绩效指标',
+        'total_return': '总收益',
+        'sharpe_ratio': '夏普比率',
+        'max_drawdown': '最大回撤',
+        'win_rate': '胜率',
+        'total_trades': '总交易次数',
+        'profit_factor': '盈亏比',
+        'avg_trade': '平均交易收益',
+        'best_trade': '最佳交易',
+        'worst_trade': '最差交易',
+        'equity_curve': '资金曲线',
+        'price_signals': '价格与信号',
+        'trade_pnl': '交易盈亏分布',
+        'indicators': '技术指标',
+        'tagline': '几分钟验证你的交易策略想法',
+        'share_cta': '截图分享你的回测结果，帮助更多人发现这个工具！',
+        'generated': '生成时间',
+        'disclaimer': '过往表现不代表未来收益',
+        'trade_table_title': '交易记录',
+        'trade_no': '序号',
+        'trade_entry_date': '入场日期',
+        'trade_exit_date': '出场日期',
+        'trade_type': '类型',
+        'trade_entry_price': '入场价格',
+        'trade_exit_price': '出场价格',
+        'trade_pnl_label': '盈亏',
+        'buy': '买入',
+        'sell': '卖出',
+        'entry_signal': '入场信号',
+        'exit_signal': '出场信号',
+        'price': '价格',
+        'equity': '资金',
+    }
+}
 
 
 # ============================================================================
@@ -711,9 +806,19 @@ def generate_html_report(
     df: pd.DataFrame,
     results: Dict,
     metrics: Dict,
-    config: Dict
+    config: Dict,
+    lang: str = 'en'
 ) -> str:
-    """Generate beautiful interactive HTML report."""
+    """Generate beautiful interactive HTML report.
+    
+    Args:
+        df: DataFrame with OHLCV data and indicators
+        results: Backtest results dict
+        metrics: Performance metrics dict
+        config: Strategy configuration
+        lang: Language code ('en' or 'zh')
+    """
+    L = LABELS.get(lang, LABELS['en'])
     
     # Prepare data for charts
     timestamps = [str(t) for t in df.index.tolist()]
@@ -1133,38 +1238,38 @@ def generate_html_report(
     
     <div class="container">
         <header class="header">
-            <div class="header-badge">Backtest Report</div>
+            <div class="header-badge">{L['title']}</div>
             <h1>{config.get('name', 'Trading Strategy')}</h1>
             <div class="header-meta">
                 <span><div class="dot"></div>{config.get('symbol', 'BTC/USDT')}</span>
-                <span><div class="dot"></div>{config.get('timeframe', '4h')} timeframe</span>
+                <span><div class="dot"></div>{config.get('timeframe', '4h')} {L['timeframe']}</span>
                 <span><div class="dot"></div>{config.get('days', 365)} days</span>
-                <span><div class="dot"></div>{metrics['total_trades']} trades</span>
+                <span><div class="dot"></div>{metrics['total_trades']} {L['total_trades'].lower()}</span>
             </div>
         </header>
         
         <div class="metrics-hero">
             <div class="metric-card hero">
                 <div class="metric-value {return_class}">{metrics['total_return_pct']:+.1f}%</div>
-                <div class="metric-label">Total Return</div>
+                <div class="metric-label">{L['total_return']}</div>
                 <div class="metric-sub">vs B&H: <span class="{vs_bh_class}">{vs_bh:+.1f}%</span></div>
             </div>
             <div class="metric-card">
                 <div class="metric-value negative">-{metrics['max_drawdown_pct']:.1f}%</div>
-                <div class="metric-label">Max Drawdown</div>
+                <div class="metric-label">{L['max_drawdown']}</div>
             </div>
             <div class="metric-card">
                 <div class="metric-value neutral">{metrics['sharpe_ratio']:.2f}</div>
-                <div class="metric-label">Sharpe Ratio</div>
+                <div class="metric-label">{L['sharpe_ratio']}</div>
             </div>
             <div class="metric-card">
                 <div class="metric-value {'positive' if metrics['win_rate_pct'] > 50 else 'negative'}">{metrics['win_rate_pct']:.0f}%</div>
-                <div class="metric-label">Win Rate</div>
+                <div class="metric-label">{L['win_rate']}</div>
                 <div class="metric-sub">{metrics['winning_trades']}W / {metrics['losing_trades']}L</div>
             </div>
             <div class="metric-card">
                 <div class="metric-value neutral">{metrics['profit_factor']}</div>
-                <div class="metric-label">Profit Factor</div>
+                <div class="metric-label">{L['profit_factor']}</div>
             </div>
             <div class="metric-card">
                 <div class="metric-value neutral">${metrics['final_equity']:,.0f}</div>
@@ -1176,7 +1281,7 @@ def generate_html_report(
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">📊</div>
-                <h2>Equity Curve</h2>
+                <h2>{L['equity_curve']}</h2>
             </div>
             <div class="chart-container" id="equity-chart"></div>
         </section>
@@ -1184,7 +1289,7 @@ def generate_html_report(
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">📉</div>
-                <h2>Drawdown</h2>
+                <h2>{L['max_drawdown']}</h2>
             </div>
             <div class="chart-container" id="drawdown-chart"></div>
         </section>
@@ -1192,17 +1297,17 @@ def generate_html_report(
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">🎯</div>
-                <h2>Strategy Rules</h2>
+                <h2>{L['strategy_config']}</h2>
             </div>
             <div class="strategy-grid">
                 <div class="rule-block">
-                    <h3>📈 Entry Conditions (AND)</h3>
+                    <h3>📈 {L['entry']} (AND)</h3>
                     <ul>
                         {''.join(f'<li>{c}</li>' for c in config.get('entry_display', ['N/A']))}
                     </ul>
                 </div>
                 <div class="rule-block">
-                    <h3>📉 Exit Conditions (OR)</h3>
+                    <h3>📉 {L['exit']} (OR)</h3>
                     <ul>
                         {''.join(f'<li>{c}</li>' for c in config.get('exit_display', ['N/A']))}
                     </ul>
@@ -1210,8 +1315,8 @@ def generate_html_report(
                 <div class="rule-block">
                     <h3>⚙️ Risk Management</h3>
                     <ul>
-                        <li>Stop Loss: {config.get('stop_loss', 5)}%</li>
-                        <li>Take Profit: {config.get('take_profit', 15)}%</li>
+                        <li>{L['stop_loss']}: {config.get('stop_loss', 5)}%</li>
+                        <li>{L['take_profit']}: {config.get('take_profit', 15)}%</li>
                         <li>Position Size: {config.get('position_size', 10)}%</li>
                         <li>Commission: {config.get('commission', 0.1)}%</li>
                     </ul>
@@ -1222,16 +1327,16 @@ def generate_html_report(
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">📋</div>
-                <h2>Recent Trades</h2>
+                <h2>{L['trade_table_title']}</h2>
             </div>
             <table class="trades-table">
                 <thead>
                     <tr>
-                        <th>Entry</th>
-                        <th>Exit</th>
-                        <th>Entry Price</th>
-                        <th>Exit Price</th>
-                        <th>P&L</th>
+                        <th>{L['trade_entry_date']}</th>
+                        <th>{L['trade_exit_date']}</th>
+                        <th>{L['trade_entry_price']}</th>
+                        <th>{L['trade_exit_price']}</th>
+                        <th>{L['trade_pnl_label']}</th>
                         <th>Reason</th>
                     </tr>
                 </thead>
@@ -1244,20 +1349,20 @@ def generate_html_report(
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">📈</div>
-                <h2>Price Chart with Signals</h2>
+                <h2>{L['price_signals']}</h2>
             </div>
             <div class="chart-container" id="price-chart"></div>
         </section>
         
         <footer class="footer">
             <div class="footer-brand">🚀 Crypto Backtest Skill</div>
-            <div class="footer-tagline">Validate your trading ideas in minutes</div>
+            <div class="footer-tagline">{L['tagline']}</div>
             <a href="https://github.com/0xrikt/crypto-skills" class="footer-cta" target="_blank">
                 ⭐ Star on GitHub
             </a>
             <div class="footer-note">
-                Share your backtest results to help others discover this tool!<br>
-                Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')} • Past performance does not guarantee future results
+                {L['share_cta']}<br>
+                {L['generated']} {datetime.now().strftime('%Y-%m-%d %H:%M')} • {L['disclaimer']}
             </div>
         </footer>
     </div>
@@ -1587,6 +1692,7 @@ def main():
     parser.add_argument('--commission', type=float, default=0.1, help='Commission percentage')
     parser.add_argument('--output', default='report.html', help='Output HTML file')
     parser.add_argument('--name', default='Trading Strategy', help='Strategy name')
+    parser.add_argument('--lang', default='en', choices=['en', 'zh'], help='Report language (en/zh)')
     
     args = parser.parse_args()
     
@@ -1653,7 +1759,7 @@ def main():
     
     # Generate HTML report
     print("📄 Generating report...")
-    html = generate_html_report(df, results, metrics, config)
+    html = generate_html_report(df, results, metrics, config, lang=args.lang)
     
     output_path = Path(args.output)
     output_path.write_text(html)
