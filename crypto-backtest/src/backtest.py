@@ -825,6 +825,21 @@ def calculate_metrics(results: Dict, df: pd.DataFrame) -> Dict:
     last_price = df.iloc[-1]['close']
     buy_hold_return = (last_price - first_price) / first_price * 100
     
+    # Additional trade stats
+    if trades:
+        all_pnls = [t['pnl_pct'] for t in trades]
+        avg_trade = np.mean(all_pnls)
+        best_trade = max(all_pnls)
+        worst_trade = min(all_pnls)
+    else:
+        avg_trade = best_trade = worst_trade = 0
+    
+    # Volatility (annualized std of returns)
+    if len(equities) > 1:
+        volatility = std_return * np.sqrt(periods_per_year) * 100
+    else:
+        volatility = 0
+    
     return {
         'total_return_pct': round(total_return_pct, 2),
         'max_drawdown_pct': round(max_drawdown, 2),
@@ -839,7 +854,11 @@ def calculate_metrics(results: Dict, df: pd.DataFrame) -> Dict:
         'final_equity': round(final_equity, 2),
         'initial_capital': initial_capital,
         'buy_hold_return_pct': round(buy_hold_return, 2),
-        'drawdowns': drawdowns
+        'drawdowns': drawdowns,
+        'avg_trade_pct': round(avg_trade, 2),
+        'best_trade_pct': round(best_trade, 2),
+        'worst_trade_pct': round(worst_trade, 2),
+        'volatility_pct': round(volatility, 2)
     }
 
 
@@ -1239,6 +1258,113 @@ def generate_html_report(
             border-bottom: none;
         }}
         
+        /* YAML Strategy Display */
+        .strategy-yaml {{
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }}
+        
+        .strategy-yaml pre {{
+            margin: 0;
+            white-space: pre;
+        }}
+        
+        .strategy-yaml code {{
+            color: #e2e8f0;
+        }}
+        
+        .yaml-section {{
+            color: #64748b;
+        }}
+        
+        .yaml-key {{
+            color: #f59e0b;
+            font-weight: 600;
+        }}
+        
+        .yaml-subkey {{
+            color: #94a3b8;
+        }}
+        
+        .yaml-value {{
+            color: #10b981;
+        }}
+        
+        .yaml-comment {{
+            color: #64748b;
+            font-style: italic;
+        }}
+        
+        .yaml-condition {{
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }}
+        
+        .yaml-condition.entry {{
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }}
+        
+        .yaml-condition.exit {{
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }}
+        
+        /* Metrics Table */
+        .metrics-table-container {{
+            overflow-x: auto;
+        }}
+        
+        .metrics-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }}
+        
+        .metrics-table thead th {{
+            background: var(--bg-elevated);
+            padding: 16px 20px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.75rem;
+            border-bottom: 2px solid var(--border-subtle);
+        }}
+        
+        .metrics-table tbody tr {{
+            border-bottom: 1px solid var(--border-subtle);
+        }}
+        
+        .metrics-table tbody tr:hover {{
+            background: var(--bg-elevated);
+        }}
+        
+        .metrics-table td {{
+            padding: 14px 20px;
+        }}
+        
+        .metrics-table .metric-name {{
+            color: var(--text-secondary);
+            font-weight: 500;
+        }}
+        
+        .metrics-table .metric-val {{
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            text-align: right;
+        }}
+        
+        .metrics-table .metric-val.positive {{ color: var(--accent-green); }}
+        .metrics-table .metric-val.negative {{ color: var(--accent-red); }}
+        
         /* Charts */
         .chart-container {{
             background: var(--bg-deep);
@@ -1366,7 +1492,7 @@ def generate_html_report(
             </div>
         </header>
         
-        <!-- Strategy Summary - The most important section -->
+        <!-- Strategy Configuration - Full YAML Display -->
         <section class="section strategy-summary">
             <div class="section-header">
                 <div class="section-icon">📋</div>
@@ -1376,82 +1502,104 @@ def generate_html_report(
             <!-- Original Strategy Idea -->
             {f'<div class="original-idea"><strong>{L["original_idea"]}</strong>"{config.get("description", "")}"</div>' if config.get('description') else ''}
             
-            <!-- Basic Info -->
-            <div class="strategy-info-grid">
-                <div class="info-item">
-                    <span class="info-label">{L['symbol']}</span>
-                    <span class="info-value">{config.get('symbol', 'BTC/USDT')}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">{L['timeframe']}</span>
-                    <span class="info-value">{config.get('timeframe', '4h')}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">{L['date_range']}</span>
-                    <span class="info-value">{config.get('start_date', 'N/A')} {L['to']} {config.get('end_date', 'N/A')}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">{L['initial_capital']}</span>
-                    <span class="info-value">${config.get('initial_capital', 10000):,.0f}</span>
-                </div>
-            </div>
-            
-            <!-- Entry/Exit Conditions -->
-            <div class="strategy-grid">
-                <div class="rule-block entry-block">
-                    <h3>📈 {L['entry_all']}</h3>
-                    <ul>
-                        {''.join(f'<li><code>{c}</code></li>' for c in config.get('entry_display', ['N/A']))}
-                    </ul>
-                </div>
-                <div class="rule-block exit-block">
-                    <h3>📉 {L['exit_any']}</h3>
-                    <ul>
-                        {''.join(f'<li><code>{c}</code></li>' for c in config.get('exit_display', ['N/A']))}
-                    </ul>
-                </div>
-                <div class="rule-block risk-block">
-                    <h3>⚙️ {L['risk_management']}</h3>
-                    <ul>
-                        <li>{L['stop_loss']}: <code>-{config.get('stop_loss', 5)}%</code></li>
-                        <li>{L['take_profit']}: <code>+{config.get('take_profit', 15)}%</code></li>
-                        <li>{L['position_size']}: <code>{config.get('position_size', 10)}%</code></li>
-                        <li>{L['commission']}: <code>{config.get('commission', 0.1)}%</code></li>
-                    </ul>
-                </div>
+            <div class="strategy-yaml">
+                <pre><code><span class="yaml-section"># ═══════════════════════════════════════════════════════════════
+# STRATEGY CONFIGURATION
+# ═══════════════════════════════════════════════════════════════</span>
+
+<span class="yaml-key">Data:</span>
+  <span class="yaml-subkey">primary_symbol:</span> <span class="yaml-value">{config.get('symbol', 'BTC/USDT')}</span>
+  <span class="yaml-subkey">timeframe:</span> <span class="yaml-value">{config.get('timeframe', '4h')}</span>
+  <span class="yaml-subkey">backtest_period:</span> <span class="yaml-value">{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')} ({config.get('days', 365)} days)</span>
+  <span class="yaml-subkey">indicators:</span> <span class="yaml-value">[RSI, SMA, EMA, BB, ATR, MACD, Volume]</span>
+
+<span class="yaml-key">Signal:</span>
+  <span class="yaml-subkey">entry_conditions:</span>
+    <span class="yaml-subkey">type:</span> <span class="yaml-value">ALL</span>  <span class="yaml-comment"># All conditions must be met</span>
+    <span class="yaml-subkey">conditions:</span>
+{''.join(f'      - <span class="yaml-condition entry">{c}</span>' + chr(10) for c in config.get('entry_display', ['N/A']))}
+  <span class="yaml-subkey">exit_conditions:</span>
+    <span class="yaml-subkey">type:</span> <span class="yaml-value">ANY</span>  <span class="yaml-comment"># Any condition triggers exit</span>
+    <span class="yaml-subkey">conditions:</span>
+{''.join(f'      - <span class="yaml-condition exit">{c}</span>' + chr(10) for c in config.get('exit_display', ['N/A']))}
+<span class="yaml-key">Capital:</span>
+  <span class="yaml-subkey">initial_capital:</span> <span class="yaml-value">${config.get('initial_capital', 10000):,.0f}</span>
+  <span class="yaml-subkey">position_size:</span> <span class="yaml-value">{config.get('position_size', 10)}%</span> <span class="yaml-comment"># Per trade allocation</span>
+  <span class="yaml-subkey">commission:</span> <span class="yaml-value">{config.get('commission', 0.1)}%</span>
+
+<span class="yaml-key">Risk:</span>
+  <span class="yaml-subkey">stop_loss:</span> <span class="yaml-value">{config.get('stop_loss', 5)}%</span>
+  <span class="yaml-subkey">take_profit:</span> <span class="yaml-value">{config.get('take_profit', 15)}%</span>
+  <span class="yaml-subkey">max_positions:</span> <span class="yaml-value">1</span>
+
+<span class="yaml-key">Execution:</span>
+  <span class="yaml-subkey">leverage:</span> <span class="yaml-value">1x</span> <span class="yaml-comment"># Spot only</span>
+  <span class="yaml-subkey">order_type:</span> <span class="yaml-value">market</span>
+  <span class="yaml-subkey">position_side:</span> <span class="yaml-value">long_only</span></code></pre>
             </div>
         </section>
         
-        <!-- Performance Metrics -->
-        <div class="metrics-hero">
-            <div class="metric-card hero">
-                <div class="metric-value {return_class}">{metrics['total_return_pct']:+.1f}%</div>
-                <div class="metric-label">{L['total_return']}</div>
-                <div class="metric-sub">vs B&H: <span class="{vs_bh_class}">{vs_bh:+.1f}%</span></div>
+        <!-- Performance Metrics - Professional Table Layout -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon">📊</div>
+                <h2>{L['performance_metrics']}</h2>
             </div>
-            <div class="metric-card">
-                <div class="metric-value negative">-{metrics['max_drawdown_pct']:.1f}%</div>
-                <div class="metric-label">{L['max_drawdown']}</div>
+            
+            <div class="metrics-table-container">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Returns</th>
+                            <th colspan="2">Risk</th>
+                            <th colspan="2">Trading</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="metric-name">{L['total_return']}</td>
+                            <td class="metric-val {return_class}">{metrics['total_return_pct']:+.2f}%</td>
+                            <td class="metric-name">{L['max_drawdown']}</td>
+                            <td class="metric-val negative">-{metrics['max_drawdown_pct']:.2f}%</td>
+                            <td class="metric-name">{L['total_trades']}</td>
+                            <td class="metric-val">{metrics['total_trades']}</td>
+                        </tr>
+                        <tr>
+                            <td class="metric-name">Buy & Hold</td>
+                            <td class="metric-val">{metrics['buy_hold_return_pct']:+.2f}%</td>
+                            <td class="metric-name">{L['sharpe_ratio']}</td>
+                            <td class="metric-val">{metrics['sharpe_ratio']:.2f}</td>
+                            <td class="metric-name">{L['win_rate']}</td>
+                            <td class="metric-val {'positive' if metrics['win_rate_pct'] > 50 else 'negative'}">{metrics['win_rate_pct']:.1f}%</td>
+                        </tr>
+                        <tr>
+                            <td class="metric-name">vs B&H</td>
+                            <td class="metric-val {vs_bh_class}">{vs_bh:+.2f}%</td>
+                            <td class="metric-name">{L['profit_factor']}</td>
+                            <td class="metric-val">{metrics['profit_factor']}</td>
+                            <td class="metric-name">W/L Ratio</td>
+                            <td class="metric-val">{metrics['winning_trades']}W / {metrics['losing_trades']}L</td>
+                        </tr>
+                        <tr>
+                            <td class="metric-name">Final Equity</td>
+                            <td class="metric-val">${metrics['final_equity']:,.0f}</td>
+                            <td class="metric-name">Avg Trade</td>
+                            <td class="metric-val">{metrics.get('avg_trade_pct', 0):+.2f}%</td>
+                            <td class="metric-name">Best Trade</td>
+                            <td class="metric-val positive">{metrics.get('best_trade_pct', 0):+.2f}%</td>
+                        </tr>
+                        <tr>
+                            <td class="metric-name">Initial</td>
+                            <td class="metric-val">${metrics['initial_capital']:,.0f}</td>
+                            <td class="metric-name">Volatility</td>
+                            <td class="metric-val">{metrics.get('volatility_pct', 0):.2f}%</td>
+                            <td class="metric-name">Worst Trade</td>
+                            <td class="metric-val negative">{metrics.get('worst_trade_pct', 0):+.2f}%</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="metric-card">
-                <div class="metric-value neutral">{metrics['sharpe_ratio']:.2f}</div>
-                <div class="metric-label">{L['sharpe_ratio']}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value {'positive' if metrics['win_rate_pct'] > 50 else 'negative'}">{metrics['win_rate_pct']:.0f}%</div>
-                <div class="metric-label">{L['win_rate']}</div>
-                <div class="metric-sub">{metrics['winning_trades']}W / {metrics['losing_trades']}L</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value neutral">{metrics['profit_factor']}</div>
-                <div class="metric-label">{L['profit_factor']}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value neutral">${metrics['final_equity']:,.0f}</div>
-                <div class="metric-label">Final Equity</div>
-                <div class="metric-sub">from ${metrics['initial_capital']:,.0f}</div>
-            </div>
-        </div>
+        </section>
         
         <section class="section">
             <div class="section-header">
