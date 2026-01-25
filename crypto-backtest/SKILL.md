@@ -281,6 +281,109 @@ Aggressive:    SL=12%, TP=35%, position=20%, max 8 concurrent
 
 ---
 
+## Technical Reference: Available Indicators
+
+### Momentum Indicators
+| Indicator | Column Name | Description |
+|-----------|-------------|-------------|
+| RSI | `rsi` | Relative Strength Index (14) |
+| Stochastic %K | `stoch_k` | Stochastic oscillator K line |
+| Stochastic %D | `stoch_d` | Stochastic oscillator D line |
+| Williams %R | `willr` | Williams %R (14) |
+| CCI | `cci` | Commodity Channel Index (20) |
+| MFI | `mfi` | Money Flow Index (14) |
+| ROC | `roc`, `roc_20` | Rate of Change (10, 20) |
+| MACD | `macd`, `macd_signal`, `macd_hist` | MACD line, signal, histogram |
+
+### Trend Indicators
+| Indicator | Column Name | Description |
+|-----------|-------------|-------------|
+| SMA | `sma9`, `sma21`, `sma50`, `sma100`, `sma200` | Simple Moving Averages |
+| EMA | `ema9`, `ema21`, `ema50`, `ema100`, `ema200` | Exponential Moving Averages |
+| ADX | `adx` | Average Directional Index (trend strength) |
+| +DI / -DI | `plus_di`, `minus_di` | Directional Indicators |
+
+### Volatility Indicators
+| Indicator | Column Name | Description |
+|-----------|-------------|-------------|
+| Bollinger Bands | `bb_upper`, `bb_middle`, `bb_lower` | Upper, middle, lower bands |
+| BB Width | `bb_width` | Band width (volatility measure) |
+| BB %B | `bb_pct` | Price position in BB range (0-1) |
+| ATR | `atr` | Average True Range (14) |
+| ATR % | `atr_pct` | ATR as % of price |
+
+### Volume Indicators
+| Indicator | Column Name | Description |
+|-----------|-------------|-------------|
+| Volume SMA | `volume_sma` | 20-period volume average |
+| Volume Ratio | `volume_ratio` | Current volume / average |
+| OBV | `obv`, `obv_sma` | On-Balance Volume |
+
+### Price Position Indicators
+| Indicator | Column Name | Description |
+|-----------|-------------|-------------|
+| Rolling High | `high_20`, `high_50`, `high_90`, `high_200` | N-period high |
+| Rolling Low | `low_20`, `low_50`, `low_90`, `low_200` | N-period low |
+| Drawdown | `drawdown`, `drawdown_50` | % from rolling high |
+| Price Position | `price_position_90` | Position in 90-day range (0-1) |
+| Distance from MA | `dist_sma50`, `dist_sma200` | % distance from MA |
+
+### Derived / Change Indicators
+| Indicator | Column Name | Description |
+|-----------|-------------|-------------|
+| Price Change | `price_change`, `price_pct_change` | 1-period change |
+| Price Change 5 | `price_change_5`, `price_pct_change_5` | 5-period change |
+| RSI Change | `rsi_change` | RSI momentum |
+| MACD Change | `macd_change`, `macd_hist_change` | MACD momentum |
+| Consecutive Up | `consecutive_up` | Count of consecutive up days |
+| Consecutive Down | `consecutive_down` | Count of consecutive down days |
+
+---
+
+## Technical Reference: Condition Syntax
+
+### 1. Simple Comparisons
+```
+rsi<30              # RSI below 30
+price>sma200        # Price above SMA 200
+adx>=25             # ADX at least 25
+bb_pct<0.2          # Price in lower 20% of BB range
+drawdown<-20        # Down 20% from recent high
+volume_ratio>2      # Volume 2x above average
+```
+
+### 2. Crossover / Crossunder
+```
+macd_crossover                  # MACD crosses above signal (default)
+ema9_cross_above_ema21          # EMA9 crosses above EMA21
+price_crossover_sma50           # Price crosses above SMA50
+rsi_crossunder_50               # RSI crosses below 50
+stoch_k_cross_above_stoch_d     # Stochastic golden cross
+```
+
+### 3. Turning Points
+```
+rsi_turning_up          # RSI starts increasing
+macd_hist_turning_down  # MACD histogram starts decreasing
+price_turning_up        # Price reversal upward
+```
+
+### 4. Consecutive Periods
+```
+rsi<30_for_3            # RSI below 30 for 3 consecutive periods
+price>sma200_for_5      # Price above SMA200 for 5 periods
+consecutive_up>=3       # At least 3 consecutive up days
+```
+
+### 5. Combined Conditions
+Conditions are comma-separated. Entry uses AND logic, Exit uses OR logic.
+```
+--entry "rsi<35,price<bb_lower,volume_ratio>1.5"
+--exit "rsi>70,price>bb_upper"
+```
+
+---
+
 ## Important Guidelines
 
 1. **Never use single indicators** - Always combine multiple dimensions
@@ -294,5 +397,6 @@ Aggressive:    SL=12%, TP=35%, position=20%, max 8 concurrent
 ## File Locations
 
 - Backtest engine: `src/backtest.py`
+- Smart DCA: `src/smart_dca.py`
 - Output reports: current working directory
 - Generated code: current working directory

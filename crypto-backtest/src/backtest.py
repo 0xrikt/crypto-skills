@@ -73,9 +73,20 @@ def fetch_ohlcv(
 # ============================================================================
 
 def calculate_indicators(df: pd.DataFrame, config: Dict) -> pd.DataFrame:
-    """Calculate all required technical indicators."""
+    """Calculate comprehensive technical indicators.
+    
+    Indicators available after calculation:
+    - Momentum: rsi, stoch_k, stoch_d, willr, cci, mfi, roc
+    - Trend: sma{9,21,50,100,200}, ema{9,21,50,100,200}, adx, plus_di, minus_di
+    - Volatility: bb_upper, bb_middle, bb_lower, bb_width, bb_pct, atr, atr_pct
+    - Volume: volume_sma, volume_ratio, obv, obv_sma
+    - Price Position: price_pct_from_high, price_pct_from_low, drawdown
+    - Derived: price_change, price_pct_change, rsi_change, macd_change
+    """
     
     df = df.copy()
+    
+    # ========== MOMENTUM INDICATORS ==========
     
     # RSI
     df['rsi'] = ta.rsi(df['close'], length=config.get('rsi_period', 14))
@@ -92,23 +103,101 @@ def calculate_indicators(df: pd.DataFrame, config: Dict) -> pd.DataFrame:
         df['macd_hist'] = macd.iloc[:, 1]
         df['macd_signal'] = macd.iloc[:, 2]
     
+    # Stochastic (KDJ)
+    stoch = ta.stoch(df['high'], df['low'], df['close'], k=14, d=3)
+    if stoch is not None:
+        df['stoch_k'] = stoch.iloc[:, 0]
+        df['stoch_d'] = stoch.iloc[:, 1]
+    
+    # Williams %R
+    df['willr'] = ta.willr(df['high'], df['low'], df['close'], length=14)
+    
+    # CCI (Commodity Channel Index)
+    df['cci'] = ta.cci(df['high'], df['low'], df['close'], length=20)
+    
+    # MFI (Money Flow Index) - RSI with volume
+    df['mfi'] = ta.mfi(df['high'], df['low'], df['close'], df['volume'], length=14)
+    
+    # ROC (Rate of Change)
+    df['roc'] = ta.roc(df['close'], length=10)
+    df['roc_20'] = ta.roc(df['close'], length=20)
+    
+    # ========== TREND INDICATORS ==========
+    
     # Moving Averages
     for period in [9, 21, 50, 100, 200]:
         df[f'sma{period}'] = ta.sma(df['close'], length=period)
         df[f'ema{period}'] = ta.ema(df['close'], length=period)
     
+    # ADX (Average Directional Index) - Trend Strength
+    adx = ta.adx(df['high'], df['low'], df['close'], length=14)
+    if adx is not None:
+        df['adx'] = adx.iloc[:, 0]
+        df['plus_di'] = adx.iloc[:, 1]  # +DI
+        df['minus_di'] = adx.iloc[:, 2]  # -DI
+    
+    # ========== VOLATILITY INDICATORS ==========
+    
     # Bollinger Bands
     bb = ta.bbands(df['close'], length=config.get('bb_period', 20), std=config.get('bb_std', 2.0))
     if bb is not None:
-        df['bb_upper'] = bb.iloc[:, 2]
-        df['bb_middle'] = bb.iloc[:, 1]
         df['bb_lower'] = bb.iloc[:, 0]
+        df['bb_middle'] = bb.iloc[:, 1]
+        df['bb_upper'] = bb.iloc[:, 2]
+        df['bb_width'] = bb.iloc[:, 3] if bb.shape[1] > 3 else (df['bb_upper'] - df['bb_lower']) / df['bb_middle']
+        df['bb_pct'] = bb.iloc[:, 4] if bb.shape[1] > 4 else (df['close'] - df['bb_lower']) / (df['bb_upper'] - df['bb_lower'])
     
     # ATR
     df['atr'] = ta.atr(df['high'], df['low'], df['close'], length=config.get('atr_period', 14))
+    df['atr_pct'] = df['atr'] / df['close'] * 100  # ATR as percentage of price
     
-    # Volume MA
+    # ========== VOLUME INDICATORS ==========
+    
+    # Volume SMA and ratio
     df['volume_sma'] = ta.sma(df['volume'], length=20)
+    df['volume_ratio'] = df['volume'] / df['volume_sma']
+    
+    # OBV (On-Balance Volume)
+    df['obv'] = ta.obv(df['close'], df['volume'])
+    df['obv_sma'] = ta.sma(df['obv'], length=20)
+    
+    # ========== PRICE POSITION INDICATORS ==========
+    
+    # Rolling High/Low (for drawdown and position calculation)
+    for period in [20, 50, 90, 200]:
+        df[f'high_{period}'] = df['high'].rolling(window=period).max()
+        df[f'low_{period}'] = df['low'].rolling(window=period).min()
+    
+    # Drawdown from rolling high
+    df['drawdown'] = (df['close'] - df['high_90']) / df['high_90'] * 100
+    df['drawdown_50'] = (df['close'] - df['high_50']) / df['high_50'] * 100
+    
+    # Price position relative to range
+    df['price_position_90'] = (df['close'] - df['low_90']) / (df['high_90'] - df['low_90'])
+    
+    # Distance from moving averages (percentage)
+    df['dist_sma50'] = (df['close'] - df['sma50']) / df['sma50'] * 100
+    df['dist_sma200'] = (df['close'] - df['sma200']) / df['sma200'] * 100
+    
+    # ========== DERIVED / CHANGE INDICATORS ==========
+    
+    # Price changes
+    df['price_change'] = df['close'].diff()
+    df['price_pct_change'] = df['close'].pct_change() * 100
+    df['price_change_5'] = df['close'].diff(5)
+    df['price_pct_change_5'] = df['close'].pct_change(5) * 100
+    
+    # Indicator changes (for "turning" detection)
+    df['rsi_change'] = df['rsi'].diff()
+    df['macd_change'] = df['macd'].diff() if 'macd' in df.columns else None
+    df['macd_hist_change'] = df['macd_hist'].diff() if 'macd_hist' in df.columns else None
+    
+    # Consecutive conditions (count of consecutive up/down days)
+    df['consecutive_up'] = df['close'].gt(df['close'].shift(1)).astype(int)
+    df['consecutive_up'] = df['consecutive_up'].groupby((df['consecutive_up'] != df['consecutive_up'].shift()).cumsum()).cumsum()
+    
+    df['consecutive_down'] = df['close'].lt(df['close'].shift(1)).astype(int)
+    df['consecutive_down'] = df['consecutive_down'].groupby((df['consecutive_down'] != df['consecutive_down'].shift()).cumsum()).cumsum()
     
     return df
 
@@ -120,9 +209,30 @@ def calculate_indicators(df: pd.DataFrame, config: Dict) -> pd.DataFrame:
 def parse_conditions(condition_str: str) -> List[Dict]:
     """Parse condition string into list of condition dicts.
     
-    Examples:
-        "rsi<30,price<sma50" -> [{'indicator': 'rsi', 'op': '<', 'value': 30}, ...]
-        "rsi>70" -> [{'indicator': 'rsi', 'op': '>', 'value': 70}]
+    Supported patterns:
+    
+    1. Simple comparison:
+       "rsi<30", "price>sma50", "adx>=25"
+    
+    2. Crossover/Crossunder:
+       "macd_crossover" - MACD crosses above signal
+       "ema9_cross_above_ema21" - EMA9 crosses above EMA21
+       "price_crossunder_sma200" - Price crosses below SMA200
+    
+    3. Consecutive periods:
+       "consecutive_up>=3" - 3+ consecutive up days
+       "rsi<30_for_3" - RSI below 30 for 3 consecutive periods
+    
+    4. Change/Turning:
+       "rsi_turning_up" - RSI is increasing (change > 0)
+       "macd_hist_turning_down" - MACD histogram decreasing
+    
+    5. Percentile/Position:
+       "bb_pct<0.2" - Price in lower 20% of BB range
+       "price_position_90<0.3" - Price in lower 30% of 90-day range
+    
+    6. Distance from MA:
+       "dist_sma200<-10" - Price 10% below SMA200
     """
     conditions = []
     if not condition_str:
@@ -131,8 +241,41 @@ def parse_conditions(condition_str: str) -> List[Dict]:
     for cond in condition_str.split(','):
         cond = cond.strip().lower()
         
-        # Match patterns like: rsi<30, price>sma50, macd_crossover
-        match = re.match(r'(\w+)(>=|<=|>|<|==|=)(\w+)', cond)
+        # Pattern: indicator_cross_above_indicator2 or indicator_crossover_indicator2
+        cross_match = re.match(r'(\w+)_(cross_?(?:over|above))_(\w+)', cond)
+        if cross_match:
+            ind1, _, ind2 = cross_match.groups()
+            conditions.append({'type': 'crossover', 'indicator': ind1, 'ref': ind2})
+            continue
+        
+        cross_under_match = re.match(r'(\w+)_(cross_?(?:under|below))_(\w+)', cond)
+        if cross_under_match:
+            ind1, _, ind2 = cross_under_match.groups()
+            conditions.append({'type': 'crossunder', 'indicator': ind1, 'ref': ind2})
+            continue
+        
+        # Pattern: indicator_turning_up or indicator_turning_down
+        turning_match = re.match(r'(\w+)_turning_(up|down)', cond)
+        if turning_match:
+            indicator, direction = turning_match.groups()
+            conditions.append({'type': 'turning', 'indicator': indicator, 'direction': direction})
+            continue
+        
+        # Pattern: indicator<value_for_N (consecutive periods)
+        consecutive_match = re.match(r'(\w+)(>=|<=|>|<|==)(\d+(?:\.\d+)?)_for_(\d+)', cond)
+        if consecutive_match:
+            indicator, op, value, periods = consecutive_match.groups()
+            conditions.append({
+                'type': 'consecutive',
+                'indicator': indicator,
+                'op': op,
+                'value': float(value),
+                'periods': int(periods)
+            })
+            continue
+        
+        # Pattern: simple comparison like rsi<30, price>sma50
+        match = re.match(r'(\w+)(>=|<=|>|<|==|=)(\w+(?:\.\d+)?)', cond)
         if match:
             indicator, op, value = match.groups()
             op = '==' if op == '=' else op
@@ -143,35 +286,138 @@ def parse_conditions(condition_str: str) -> List[Dict]:
                 conditions.append({'indicator': indicator, 'op': op, 'value': value})
             except ValueError:
                 conditions.append({'indicator': indicator, 'op': op, 'ref': value})
+            continue
         
-        # Special patterns
-        elif 'crossover' in cond or 'cross_above' in cond:
+        # Legacy patterns for backwards compatibility
+        if 'crossover' in cond or 'cross_above' in cond:
             parts = cond.replace('crossover', '').replace('cross_above', '').replace('_', '').strip()
-            conditions.append({'type': 'crossover', 'indicator': parts or 'macd'})
+            conditions.append({'type': 'crossover', 'indicator': parts or 'macd', 'ref': 'macd_signal' if not parts or 'macd' in parts else None})
         elif 'crossunder' in cond or 'cross_below' in cond:
             parts = cond.replace('crossunder', '').replace('cross_below', '').replace('_', '').strip()
-            conditions.append({'type': 'crossunder', 'indicator': parts or 'macd'})
+            conditions.append({'type': 'crossunder', 'indicator': parts or 'macd', 'ref': 'macd_signal' if not parts or 'macd' in parts else None})
     
     return conditions
 
 
 def evaluate_condition(df: pd.DataFrame, condition: Dict) -> pd.Series:
-    """Evaluate a single condition across the dataframe."""
+    """Evaluate a single condition across the dataframe.
     
+    Supports:
+    - Simple comparisons (<, >, <=, >=, ==)
+    - Crossover/Crossunder between any two indicators
+    - Turning up/down detection
+    - Consecutive periods meeting condition
+    """
+    
+    # Handle crossover between two indicators
     if condition.get('type') == 'crossover':
         ind = condition['indicator']
-        if 'macd' in ind:
-            return (df['macd'] > df['macd_signal']) & (df['macd'].shift(1) <= df['macd_signal'].shift(1))
-        return pd.Series(False, index=df.index)
+        ref = condition.get('ref')
+        
+        # Default ref for MACD
+        if 'macd' in ind and ref is None:
+            ref = 'macd_signal'
+            ind = 'macd'
+        
+        # Get the two series
+        if ind == 'price':
+            series1 = df['close']
+        elif ind in df.columns:
+            series1 = df[ind]
+        else:
+            return pd.Series(False, index=df.index)
+        
+        if ref in df.columns:
+            series2 = df[ref]
+        else:
+            return pd.Series(False, index=df.index)
+        
+        # Crossover: was below/equal, now above
+        return (series1 > series2) & (series1.shift(1) <= series2.shift(1))
     
+    # Handle crossunder
     if condition.get('type') == 'crossunder':
         ind = condition['indicator']
-        if 'macd' in ind:
-            return (df['macd'] < df['macd_signal']) & (df['macd'].shift(1) >= df['macd_signal'].shift(1))
-        return pd.Series(False, index=df.index)
+        ref = condition.get('ref')
+        
+        if 'macd' in ind and ref is None:
+            ref = 'macd_signal'
+            ind = 'macd'
+        
+        if ind == 'price':
+            series1 = df['close']
+        elif ind in df.columns:
+            series1 = df[ind]
+        else:
+            return pd.Series(False, index=df.index)
+        
+        if ref in df.columns:
+            series2 = df[ref]
+        else:
+            return pd.Series(False, index=df.index)
+        
+        return (series1 < series2) & (series1.shift(1) >= series2.shift(1))
     
-    indicator = condition['indicator']
-    op = condition['op']
+    # Handle turning up/down
+    if condition.get('type') == 'turning':
+        ind = condition['indicator']
+        direction = condition['direction']
+        
+        if ind in df.columns:
+            series = df[ind]
+        elif ind == 'price':
+            series = df['close']
+        else:
+            return pd.Series(False, index=df.index)
+        
+        change = series.diff()
+        
+        if direction == 'up':
+            # Turning up: current change > 0, previous change <= 0
+            return (change > 0) & (change.shift(1) <= 0)
+        else:
+            # Turning down: current change < 0, previous change >= 0
+            return (change < 0) & (change.shift(1) >= 0)
+    
+    # Handle consecutive periods
+    if condition.get('type') == 'consecutive':
+        ind = condition['indicator']
+        op = condition['op']
+        value = condition['value']
+        periods = condition['periods']
+        
+        if ind in df.columns:
+            series = df[ind]
+        elif ind == 'price':
+            series = df['close']
+        else:
+            return pd.Series(False, index=df.index)
+        
+        # Evaluate base condition
+        if op == '<':
+            base_cond = series < value
+        elif op == '<=':
+            base_cond = series <= value
+        elif op == '>':
+            base_cond = series > value
+        elif op == '>=':
+            base_cond = series >= value
+        elif op == '==':
+            base_cond = series == value
+        else:
+            return pd.Series(False, index=df.index)
+        
+        # Check if condition met for N consecutive periods
+        # Rolling sum of True values, must equal periods
+        consecutive_count = base_cond.astype(int).rolling(window=periods).sum()
+        return consecutive_count >= periods
+    
+    # Standard comparison
+    indicator = condition.get('indicator')
+    op = condition.get('op')
+    
+    if not indicator or not op:
+        return pd.Series(False, index=df.index)
     
     # Get indicator values
     if indicator == 'price':
