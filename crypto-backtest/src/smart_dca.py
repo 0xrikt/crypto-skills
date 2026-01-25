@@ -56,6 +56,38 @@ LABELS = {
         'smart_wins': 'Smart DCA wins! Alpha',
         'fixed_wins': 'Fixed DCA wins by',
         'cost_reduction_label': 'Cost reduction',
+        # Strategy summary labels
+        'strategy_summary': 'Strategy Summary',
+        'symbol': 'Symbol',
+        'frequency': 'Frequency',
+        'base_amount': 'Base Amount',
+        'backtest_period': 'Backtest Period',
+        'days': 'days',
+        'every_n_days': 'Every {n} days',
+        'valuation_model': 'Valuation Model',
+        'allocation_rules': 'Allocation Rules',
+        'bullish_signal': 'Bullish Signal',
+        'bearish_signal': 'Bearish Signal',
+        'weight': 'Weight',
+        'factor': 'Factor',
+        'indicator': 'Indicator',
+        'score_range': 'Score Range',
+        'allocation': 'Allocation',
+        'rsi_low': 'RSI < 35',
+        'rsi_high': 'RSI > 65',
+        'below_sma200': 'Price < SMA200',
+        'above_sma200_130': 'Price > SMA200 × 1.3',
+        'below_bb_lower': 'Price < BB Lower',
+        'above_bb_upper': 'Price > BB Upper',
+        'drawdown_25': 'Drawdown > 25%',
+        'near_ath': 'Near ATH (< 5% DD)',
+        'macd_turning_up': 'MACD turning up (negative zone)',
+        'macd_turning_down': 'MACD turning down (positive zone)',
+        'strong_buy': '🟢🟢 Strong buy zone',
+        'undervalued': '🟢 Undervalued',
+        'fair_value': '🟡 Fair value',
+        'overvalued': '🔴 Overvalued',
+        'extreme_caution': '🔴🔴 Extreme caution',
     },
     'zh': {
         'title': '智能定投 vs 等额定投',
@@ -85,6 +117,38 @@ LABELS = {
         'smart_wins': '智能定投胜出！超额收益',
         'fixed_wins': '等额定投胜出，差距',
         'cost_reduction_label': '平均成本降低',
+        # Strategy summary labels
+        'strategy_summary': '策略摘要',
+        'symbol': '交易对',
+        'frequency': '定投频率',
+        'base_amount': '基准金额',
+        'backtest_period': '回测周期',
+        'days': '天',
+        'every_n_days': '每 {n} 天',
+        'valuation_model': '估值模型',
+        'allocation_rules': '投资分配规则',
+        'bullish_signal': '看涨信号',
+        'bearish_signal': '看跌信号',
+        'weight': '权重',
+        'factor': '因子',
+        'indicator': '指标',
+        'score_range': '分数区间',
+        'allocation': '投资倍数',
+        'rsi_low': 'RSI < 35',
+        'rsi_high': 'RSI > 65',
+        'below_sma200': '价格 < SMA200',
+        'above_sma200_130': '价格 > SMA200 × 1.3',
+        'below_bb_lower': '价格 < 布林带下轨',
+        'above_bb_upper': '价格 > 布林带上轨',
+        'drawdown_25': '回撤 > 25%',
+        'near_ath': '接近历史高点 (回撤 < 5%)',
+        'macd_turning_up': 'MACD 负值区域转正',
+        'macd_turning_down': 'MACD 正值区域转负',
+        'strong_buy': '🟢🟢 强烈买入区',
+        'undervalued': '🟢 低估',
+        'fair_value': '🟡 合理估值',
+        'overvalued': '🔴 高估',
+        'extreme_caution': '🔴🔴 极度谨慎',
     }
 }
 
@@ -430,6 +494,100 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
             color: var(--text-secondary);
         }}
         
+        /* Strategy Summary */
+        .strategy-summary {{
+            background: var(--bg-surface);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 48px;
+        }}
+        
+        .strategy-summary h2 {{
+            font-size: 1.25rem;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }}
+        
+        .info-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+        }}
+        
+        .info-item {{
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }}
+        
+        .info-label {{
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }}
+        
+        .info-value {{
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        
+        .model-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }}
+        
+        .model-block {{
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 20px;
+        }}
+        
+        .model-block h3 {{
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            margin-bottom: 16px;
+        }}
+        
+        .model-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }}
+        
+        .model-table th {{
+            text-align: left;
+            padding: 8px;
+            background: var(--bg-deep);
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+        }}
+        
+        .model-table td {{
+            padding: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        
+        .model-table .bullish {{
+            color: var(--accent-green);
+        }}
+        
+        .model-table .bearish {{
+            color: var(--accent-red);
+        }}
+        
         .comparison-hero {{
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -580,6 +738,73 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
                 <span>💰 {L['base']} {config.get('base_amount', 200)} USDT{L['per_period']}</span>
             </div>
         </header>
+        
+        <!-- Strategy Summary -->
+        <section class="strategy-summary">
+            <h2>📋 {L['strategy_summary']}</h2>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">{L['symbol']}</span>
+                    <span class="info-value">{config.get('symbol', 'BTC/USDT')}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">{L['frequency']}</span>
+                    <span class="info-value">{L['every_n_days'].format(n=config.get('frequency', 7))}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">{L['base_amount']}</span>
+                    <span class="info-value">${config.get('base_amount', 200)}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">{L['backtest_period']}</span>
+                    <span class="info-value">{config.get('days', 1095)} {L['days']}</span>
+                </div>
+            </div>
+            
+            <div class="model-grid">
+                <div class="model-block">
+                    <h3>📊 {L['valuation_model']}</h3>
+                    <table class="model-table">
+                        <thead>
+                            <tr>
+                                <th>{L['factor']}</th>
+                                <th>{L['bullish_signal']}</th>
+                                <th>{L['bearish_signal']}</th>
+                                <th>{L['weight']}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>RSI(14)</td><td class="bullish">{L['rsi_low']}</td><td class="bearish">{L['rsi_high']}</td><td>1.0</td></tr>
+                            <tr><td>SMA(200)</td><td class="bullish">{L['below_sma200']}</td><td class="bearish">{L['above_sma200_130']}</td><td>1.0</td></tr>
+                            <tr><td>Bollinger</td><td class="bullish">{L['below_bb_lower']}</td><td class="bearish">{L['above_bb_upper']}</td><td>1.0</td></tr>
+                            <tr><td>Drawdown</td><td class="bullish">{L['drawdown_25']}</td><td class="bearish">{L['near_ath']}</td><td>1.0</td></tr>
+                            <tr><td>MACD</td><td class="bullish">{L['macd_turning_up']}</td><td class="bearish">{L['macd_turning_down']}</td><td>0.5</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="model-block">
+                    <h3>💰 {L['allocation_rules']}</h3>
+                    <table class="model-table">
+                        <thead>
+                            <tr>
+                                <th>{L['score_range']}</th>
+                                <th>State</th>
+                                <th>{L['allocation']}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>≥ +3.0</td><td>{L['strong_buy']}</td><td class="bullish">× 2.0</td></tr>
+                            <tr><td>+1.5 ~ +3.0</td><td>{L['undervalued']}</td><td class="bullish">× 1.5</td></tr>
+                            <tr><td>-1.5 ~ +1.5</td><td>{L['fair_value']}</td><td>× 1.0</td></tr>
+                            <tr><td>-3.0 ~ -1.5</td><td>{L['overvalued']}</td><td class="bearish">× 0.5</td></tr>
+                            <tr><td>≤ -3.0</td><td>{L['extreme_caution']}</td><td class="bearish">× 0.25</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
         
         <div class="comparison-hero">
             <div class="strategy-card {'winner' if comp['extra_return_pct'] > 0 else ''}">

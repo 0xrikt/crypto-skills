@@ -40,14 +40,22 @@ import pandas_ta as ta
 LABELS = {
     'en': {
         'title': 'Strategy Backtest Report',
+        'strategy_summary': 'Strategy Summary',
         'strategy_config': 'Strategy Configuration',
         'symbol': 'Symbol',
         'timeframe': 'Timeframe',
         'period': 'Period',
+        'backtest_period': 'Backtest Period',
+        'initial_capital': 'Initial Capital',
         'entry': 'Entry Conditions',
         'exit': 'Exit Conditions',
+        'entry_all': 'Entry (ALL conditions must be met)',
+        'exit_any': 'Exit (ANY condition triggers)',
         'stop_loss': 'Stop Loss',
         'take_profit': 'Take Profit',
+        'position_size': 'Position Size',
+        'commission': 'Commission',
+        'risk_management': 'Risk Management',
         'performance_metrics': 'Performance Metrics',
         'total_return': 'Total Return',
         'sharpe_ratio': 'Sharpe Ratio',
@@ -80,17 +88,26 @@ LABELS = {
         'exit_signal': 'Exit Signal',
         'price': 'Price',
         'equity': 'Equity',
+        'days': 'days',
     },
     'zh': {
         'title': '策略回测报告',
+        'strategy_summary': '策略摘要',
         'strategy_config': '策略配置',
         'symbol': '交易对',
         'timeframe': '时间周期',
         'period': '回测周期',
+        'backtest_period': '回测周期',
+        'initial_capital': '初始资金',
         'entry': '入场条件',
         'exit': '出场条件',
+        'entry_all': '入场条件（全部满足）',
+        'exit_any': '出场条件（任一触发）',
         'stop_loss': '止损',
         'take_profit': '止盈',
+        'position_size': '仓位大小',
+        'commission': '手续费',
+        'risk_management': '风险管理',
         'performance_metrics': '绩效指标',
         'total_return': '总收益',
         'sharpe_ratio': '夏普比率',
@@ -1105,6 +1122,42 @@ def generate_html_report(
             font-weight: 600;
         }}
         
+        /* Strategy Summary */
+        .strategy-summary {{
+            border: 2px solid var(--accent-cyan);
+            background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(0, 217, 255, 0.05) 100%);
+        }}
+        
+        .strategy-info-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+        }}
+        
+        .info-item {{
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }}
+        
+        .info-label {{
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }}
+        
+        .info-value {{
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        
         /* Strategy Rules */
         .strategy-grid {{
             display: grid;
@@ -1116,6 +1169,18 @@ def generate_html_report(
             background: var(--bg-elevated);
             border-radius: 12px;
             padding: 24px;
+        }}
+        
+        .rule-block.entry-block {{
+            border-left: 3px solid var(--accent-green);
+        }}
+        
+        .rule-block.exit-block {{
+            border-left: 3px solid var(--accent-red);
+        }}
+        
+        .rule-block.risk-block {{
+            border-left: 3px solid var(--accent-gold);
         }}
         
         .rule-block h3 {{
@@ -1134,8 +1199,15 @@ def generate_html_report(
         .rule-block li {{
             padding: 8px 0;
             border-bottom: 1px solid var(--border-subtle);
-            font-family: 'JetBrains Mono', monospace;
             font-size: 0.9rem;
+        }}
+        
+        .rule-block li code {{
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--accent-cyan);
         }}
         
         .rule-block li:last-child {{
@@ -1269,6 +1341,60 @@ def generate_html_report(
             </div>
         </header>
         
+        <!-- Strategy Summary - The most important section -->
+        <section class="section strategy-summary">
+            <div class="section-header">
+                <div class="section-icon">📋</div>
+                <h2>{L['strategy_summary']}</h2>
+            </div>
+            
+            <!-- Basic Info -->
+            <div class="strategy-info-grid">
+                <div class="info-item">
+                    <span class="info-label">{L['symbol']}</span>
+                    <span class="info-value">{config.get('symbol', 'BTC/USDT')}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">{L['timeframe']}</span>
+                    <span class="info-value">{config.get('timeframe', '4h')}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">{L['backtest_period']}</span>
+                    <span class="info-value">{config.get('days', 365)} {L['days']}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">{L['initial_capital']}</span>
+                    <span class="info-value">${config.get('initial_capital', 10000):,.0f}</span>
+                </div>
+            </div>
+            
+            <!-- Entry/Exit Conditions -->
+            <div class="strategy-grid">
+                <div class="rule-block entry-block">
+                    <h3>📈 {L['entry_all']}</h3>
+                    <ul>
+                        {''.join(f'<li><code>{c}</code></li>' for c in config.get('entry_display', ['N/A']))}
+                    </ul>
+                </div>
+                <div class="rule-block exit-block">
+                    <h3>📉 {L['exit_any']}</h3>
+                    <ul>
+                        {''.join(f'<li><code>{c}</code></li>' for c in config.get('exit_display', ['N/A']))}
+                    </ul>
+                </div>
+                <div class="rule-block risk-block">
+                    <h3>⚙️ {L['risk_management']}</h3>
+                    <ul>
+                        <li>{L['stop_loss']}: <code>-{config.get('stop_loss', 5)}%</code></li>
+                        <li>{L['take_profit']}: <code>+{config.get('take_profit', 15)}%</code></li>
+                        <li>{L['position_size']}: <code>{config.get('position_size', 10)}%</code></li>
+                        <li>{L['commission']}: <code>{config.get('commission', 0.1)}%</code></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Performance Metrics -->
         <div class="metrics-hero">
             <div class="metric-card hero">
                 <div class="metric-value {return_class}">{metrics['total_return_pct']:+.1f}%</div>
@@ -1313,36 +1439,6 @@ def generate_html_report(
                 <h2>{L['max_drawdown']}</h2>
             </div>
             <div class="chart-container" id="drawdown-chart"></div>
-        </section>
-        
-        <section class="section">
-            <div class="section-header">
-                <div class="section-icon">🎯</div>
-                <h2>{L['strategy_config']}</h2>
-            </div>
-            <div class="strategy-grid">
-                <div class="rule-block">
-                    <h3>📈 {L['entry']} (AND)</h3>
-                    <ul>
-                        {''.join(f'<li>{c}</li>' for c in config.get('entry_display', ['N/A']))}
-                    </ul>
-                </div>
-                <div class="rule-block">
-                    <h3>📉 {L['exit']} (OR)</h3>
-                    <ul>
-                        {''.join(f'<li>{c}</li>' for c in config.get('exit_display', ['N/A']))}
-                    </ul>
-                </div>
-                <div class="rule-block">
-                    <h3>⚙️ Risk Management</h3>
-                    <ul>
-                        <li>{L['stop_loss']}: {config.get('stop_loss', 5)}%</li>
-                        <li>{L['take_profit']}: {config.get('take_profit', 15)}%</li>
-                        <li>Position Size: {config.get('position_size', 10)}%</li>
-                        <li>Commission: {config.get('commission', 0.1)}%</li>
-                    </ul>
-                </div>
-            </div>
         </section>
         
         <section class="section">
