@@ -74,6 +74,7 @@ LABELS = {
         'share_cta': 'Share your results to help others discover this tool!',
         'generated': 'Generated on',
         'disclaimer': 'Past performance ≠ future results',
+        'analysis_title': 'Strategy Analysis',
         'trade_table_title': 'Trade History',
         'trade_no': '#',
         'trade_entry_date': 'Entry Date',
@@ -129,6 +130,7 @@ LABELS = {
         'share_cta': '截图分享你的回测结果，帮助更多人发现这个工具！',
         'generated': '生成时间',
         'disclaimer': '过往表现不代表未来收益',
+        'analysis_title': '整体分析',
         'trade_table_title': '交易记录',
         'trade_no': '序号',
         'trade_entry_date': '入场日期',
@@ -863,6 +865,164 @@ def calculate_metrics(results: Dict, df: pd.DataFrame) -> Dict:
 
 
 # ============================================================================
+# STRATEGY ANALYSIS GENERATION
+# ============================================================================
+
+def generate_strategy_analysis(metrics: Dict, config: Dict, lang: str = 'en') -> str:
+    """Generate professional strategy analysis based on backtest results."""
+    
+    # Extract key metrics
+    total_return = metrics.get('total_return_pct', 0)
+    max_dd = metrics.get('max_drawdown_pct', 0)
+    sharpe = metrics.get('sharpe_ratio', 0)
+    win_rate = metrics.get('win_rate_pct', 0)
+    profit_factor = metrics.get('profit_factor', 0)
+    total_trades = metrics.get('total_trades', 0)
+    buy_hold = metrics.get('buy_hold_return_pct', 0)
+    avg_trade = metrics.get('avg_trade_pct', 0)
+    
+    if lang == 'zh':
+        # Performance assessment
+        if total_return > 20:
+            perf = "表现出色"
+        elif total_return > 5:
+            perf = "表现良好"
+        elif total_return > 0:
+            perf = "小幅盈利"
+        elif total_return > -5:
+            perf = "轻微亏损"
+        else:
+            perf = "表现不佳"
+        
+        # Risk assessment
+        if max_dd < 5:
+            risk = "风险控制极佳"
+        elif max_dd < 10:
+            risk = "风险可控"
+        elif max_dd < 20:
+            risk = "风险中等"
+        else:
+            risk = "风险较高"
+        
+        # Sharpe assessment
+        if sharpe > 2:
+            sharpe_eval = "风险调整收益优秀"
+        elif sharpe > 1:
+            sharpe_eval = "风险调整收益良好"
+        elif sharpe > 0.5:
+            sharpe_eval = "风险调整收益一般"
+        else:
+            sharpe_eval = "风险调整收益偏低"
+        
+        # Trade quality
+        if win_rate >= 60 and avg_trade > 2:
+            trade_quality = "交易质量高，胜率和平均收益都表现不错"
+        elif win_rate >= 50:
+            trade_quality = "交易胜率尚可，但需关注单笔收益"
+        else:
+            trade_quality = "胜率偏低，策略可能依赖少数大赢家"
+        
+        # vs Buy & Hold
+        vs_bh = total_return - buy_hold
+        if vs_bh > 10:
+            bh_compare = f"大幅跑赢买入持有策略 {vs_bh:+.1f}%"
+        elif vs_bh > 0:
+            bh_compare = f"小幅跑赢买入持有策略 {vs_bh:+.1f}%"
+        elif vs_bh > -10:
+            bh_compare = f"略逊于买入持有策略 {vs_bh:+.1f}%"
+        else:
+            bh_compare = f"明显落后于买入持有策略 {vs_bh:+.1f}%"
+        
+        # Build analysis
+        analysis = f"""
+**📊 绩效评估**：策略在回测期间{perf}，总收益率 {total_return:+.2f}%。{bh_compare}。
+
+**⚠️ 风险评估**：最大回撤 {max_dd:.1f}%，{risk}。夏普比率 {sharpe:.2f}，{sharpe_eval}。
+
+**📈 交易分析**：共执行 {total_trades} 笔交易，胜率 {win_rate:.1f}%，盈亏比 {profit_factor}。{trade_quality}。
+
+**💡 建议**："""
+        
+        if total_return > 0 and max_dd < 15 and sharpe > 0.5:
+            analysis += "策略整体表现稳健，可考虑在实盘中小仓位测试。建议持续监控关键指标，设置严格的风控规则。"
+        elif total_return > 0:
+            analysis += "策略有盈利潜力，但需注意风险控制。建议优化止损设置，或调整仓位管理来降低回撤。"
+        else:
+            analysis += "策略在当前参数下表现欠佳。建议重新审视入场条件、调整参数，或考虑其他市场环境。"
+    
+    else:  # English
+        # Performance assessment
+        if total_return > 20:
+            perf = "excellent performance"
+        elif total_return > 5:
+            perf = "solid performance"
+        elif total_return > 0:
+            perf = "modest gains"
+        elif total_return > -5:
+            perf = "slight losses"
+        else:
+            perf = "underperformance"
+        
+        # Risk assessment
+        if max_dd < 5:
+            risk = "excellent risk control"
+        elif max_dd < 10:
+            risk = "manageable risk"
+        elif max_dd < 20:
+            risk = "moderate risk"
+        else:
+            risk = "elevated risk"
+        
+        # Sharpe assessment
+        if sharpe > 2:
+            sharpe_eval = "outstanding risk-adjusted returns"
+        elif sharpe > 1:
+            sharpe_eval = "good risk-adjusted returns"
+        elif sharpe > 0.5:
+            sharpe_eval = "acceptable risk-adjusted returns"
+        else:
+            sharpe_eval = "below-average risk-adjusted returns"
+        
+        # Trade quality
+        if win_rate >= 60 and avg_trade > 2:
+            trade_quality = "High trade quality with strong win rate and average profit"
+        elif win_rate >= 50:
+            trade_quality = "Decent win rate but monitor per-trade profitability"
+        else:
+            trade_quality = "Low win rate - strategy may rely on few big winners"
+        
+        # vs Buy & Hold
+        vs_bh = total_return - buy_hold
+        if vs_bh > 10:
+            bh_compare = f"significantly outperformed buy-and-hold by {vs_bh:+.1f}%"
+        elif vs_bh > 0:
+            bh_compare = f"slightly outperformed buy-and-hold by {vs_bh:+.1f}%"
+        elif vs_bh > -10:
+            bh_compare = f"slightly underperformed buy-and-hold by {vs_bh:+.1f}%"
+        else:
+            bh_compare = f"significantly underperformed buy-and-hold by {vs_bh:+.1f}%"
+        
+        # Build analysis
+        analysis = f"""
+**📊 Performance**:  The strategy showed {perf} with a total return of {total_return:+.2f}%. It {bh_compare}.
+
+**⚠️ Risk Assessment**: Maximum drawdown of {max_dd:.1f}% indicates {risk}. Sharpe ratio of {sharpe:.2f} suggests {sharpe_eval}.
+
+**📈 Trade Analysis**: {total_trades} trades executed with {win_rate:.1f}% win rate and {profit_factor} profit factor. {trade_quality}.
+
+**💡 Recommendation**: """
+        
+        if total_return > 0 and max_dd < 15 and sharpe > 0.5:
+            analysis += "Strategy shows robust performance. Consider paper trading or small position live testing. Maintain strict risk management and monitor key metrics."
+        elif total_return > 0:
+            analysis += "Strategy has profit potential but needs risk optimization. Consider tightening stop losses or adjusting position sizing to reduce drawdown."
+        else:
+            analysis += "Strategy underperformed with current parameters. Recommend reviewing entry conditions, parameter tuning, or testing in different market conditions."
+    
+    return analysis.strip()
+
+
+# ============================================================================
 # HTML REPORT GENERATION
 # ============================================================================
 
@@ -917,6 +1077,21 @@ def generate_html_report(
             <td class="{pnl_class}">{t['pnl_pct']:+.2f}%</td>
             <td class="exit-reason">{t['exit_reason']}</td>
         </tr>'''
+    
+    # Generate strategy analysis
+    analysis_text = generate_strategy_analysis(metrics, config, lang)
+    # Convert markdown-style bold to HTML
+    analysis_html = analysis_text.replace('**', '</strong>').replace('</strong>', '<strong>', 1)
+    # Fix alternating strong tags
+    parts = analysis_text.split('**')
+    analysis_html = ''
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            analysis_html += f'<strong>{part}</strong>'
+        else:
+            analysis_html += part
+    analysis_html = analysis_html.replace('\n\n', '</p><p>').replace('\n', '<br>')
+    analysis_html = f'<p>{analysis_html}</p>'
     
     html = f'''<!DOCTYPE html>
 <html lang="en">
@@ -1273,34 +1448,41 @@ def generate_html_report(
             border-bottom: none;
         }}
         
-        /* Strategy Compact Layout - 3x2 Grid */
+        /* Strategy Compact Layout - 3 columns */
         .strategy-compact {{
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 16px;
         }}
         
-        @media (max-width: 992px) {{
-            .strategy-compact {{ grid-template-columns: repeat(2, 1fr); }}
+        @media (max-width: 900px) {{
+            .strategy-compact {{ grid-template-columns: 1fr 1fr; }}
         }}
         
         @media (max-width: 600px) {{
             .strategy-compact {{ grid-template-columns: 1fr; }}
         }}
         
+        .strategy-col {{
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }}
+        
         .strategy-block {{
             background: var(--bg-elevated);
             border-radius: 8px;
-            padding: 12px 14px;
+            padding: 14px 16px;
+            flex: 1;
         }}
         
         .strategy-block h4 {{
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.7rem;
+            font-weight: 700;
             color: var(--text-muted);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }}
         
         .param-row {{
@@ -1532,6 +1714,31 @@ def generate_html_report(
             opacity: 1;
         }}
         
+        /* Analysis Section */
+        .analysis-section {{
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+            border: 1px solid var(--border-accent);
+        }}
+        
+        .analysis-content {{
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }}
+        
+        .analysis-content p {{
+            margin-bottom: 16px;
+        }}
+        
+        .analysis-content p:last-child {{
+            margin-bottom: 0;
+        }}
+        
+        .analysis-content strong {{
+            color: var(--text-primary);
+            font-weight: 600;
+        }}
+        
         .footer-note {{
             margin-top: 16px;
             color: var(--text-muted);
@@ -1574,36 +1781,45 @@ def generate_html_report(
             </div>
             
             <div class="strategy-compact">
-                <div class="strategy-block">
-                    <h4>📊 Data</h4>
-                    <div class="param-row"><span>Symbol</span><code>{config.get('symbol', 'BTC/USDT')}</code></div>
-                    <div class="param-row"><span>Timeframe</span><code>{config.get('timeframe', '4h')}</code></div>
-                    <div class="param-row"><span>Period</span><code>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</code></div>
+                <!-- Column 1: Data + Capital -->
+                <div class="strategy-col">
+                    <div class="strategy-block">
+                        <h4>📊 DATA</h4>
+                        <div class="param-row"><span>Symbol</span><code>{config.get('symbol', 'BTC/USDT')}</code></div>
+                        <div class="param-row"><span>Timeframe</span><code>{config.get('timeframe', '4h')}</code></div>
+                        <div class="param-row"><span>Period</span><code>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</code></div>
+                    </div>
+                    <div class="strategy-block">
+                        <h4>💰 CAPITAL</h4>
+                        <div class="param-row"><span>Initial</span><code>${config.get('initial_capital', 10000):,.0f}</code></div>
+                        <div class="param-row"><span>Position</span><code>{config.get('position_size', 10)}%</code></div>
+                        <div class="param-row"><span>Fee</span><code>{config.get('commission', 0.1)}%</code></div>
+                    </div>
                 </div>
-                <div class="strategy-block signal-block entry">
-                    <h4>🟢 Entry</h4>
-                    {''.join(f'<code>{c}</code>' for c in config.get('entry_display', ['N/A']))}
+                <!-- Column 2: Entry + Exit -->
+                <div class="strategy-col">
+                    <div class="strategy-block signal-block entry">
+                        <h4>🟢 ENTRY</h4>
+                        {''.join(f'<code>{c}</code>' for c in config.get('entry_display', ['N/A']))}
+                    </div>
+                    <div class="strategy-block signal-block exit">
+                        <h4>🔴 EXIT</h4>
+                        {''.join(f'<code>{c}</code>' for c in config.get('exit_display', ['N/A']))}
+                    </div>
                 </div>
-                <div class="strategy-block signal-block exit">
-                    <h4>🔴 Exit</h4>
-                    {''.join(f'<code>{c}</code>' for c in config.get('exit_display', ['N/A']))}
-                </div>
-                <div class="strategy-block">
-                    <h4>💰 Capital</h4>
-                    <div class="param-row"><span>Initial</span><code>${config.get('initial_capital', 10000):,.0f}</code></div>
-                    <div class="param-row"><span>Position</span><code>{config.get('position_size', 10)}%</code></div>
-                    <div class="param-row"><span>Fee</span><code>{config.get('commission', 0.1)}%</code></div>
-                </div>
-                <div class="strategy-block">
-                    <h4>⚠️ Risk</h4>
-                    <div class="param-row"><span>Stop Loss</span><code class="red">-{config.get('stop_loss', 5)}%</code></div>
-                    <div class="param-row"><span>Take Profit</span><code class="green">+{config.get('take_profit', 15)}%</code></div>
-                </div>
-                <div class="strategy-block">
-                    <h4>⚙️ Execution</h4>
-                    <div class="param-row"><span>Leverage</span><code>1x</code></div>
-                    <div class="param-row"><span>Type</span><code>Market</code></div>
-                    <div class="param-row"><span>Side</span><code>Long</code></div>
+                <!-- Column 3: Risk + Execution -->
+                <div class="strategy-col">
+                    <div class="strategy-block">
+                        <h4>⚠️ RISK</h4>
+                        <div class="param-row"><span>Stop Loss</span><code class="red">-{config.get('stop_loss', 5)}%</code></div>
+                        <div class="param-row"><span>Take Profit</span><code class="green">+{config.get('take_profit', 15)}%</code></div>
+                    </div>
+                    <div class="strategy-block">
+                        <h4>⚙️ EXECUTION</h4>
+                        <div class="param-row"><span>Leverage</span><code>1x</code></div>
+                        <div class="param-row"><span>Type</span><code>Market</code></div>
+                        <div class="param-row"><span>Side</span><code>Long</code></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1712,6 +1928,17 @@ def generate_html_report(
                 <div class="chart-container" id="drawdown-chart"></div>
             </section>
         </div>
+        
+        <!-- Strategy Analysis -->
+        <section class="section analysis-section">
+            <div class="section-header">
+                <div class="section-icon">🧠</div>
+                <h2>{L['analysis_title']}</h2>
+            </div>
+            <div class="analysis-content">
+                {analysis_html}
+            </div>
+        </section>
         
         <footer class="footer">
             <div class="footer-tagline">{L['tagline']}</div>
