@@ -53,13 +53,56 @@ python src/backtest.py \
 
 ## 📊 Supported Indicators
 
+### Momentum Indicators
 | Indicator | Syntax | Example |
 |-----------|--------|---------|
 | RSI | `rsi` | `rsi<30`, `rsi>70` |
-| MACD | `macd`, `macd_signal` | `macd>macd_signal` |
-| SMA | `sma{period}` | `price>sma50` |
-| EMA | `ema{period}` | `price<ema21` |
-| Bollinger Bands | `bb_upper`, `bb_lower` | `price>bb_upper` |
+| MACD | `macd`, `macd_signal`, `macd_hist` | `macd>macd_signal` |
+| Stochastic | `stoch_k`, `stoch_d` | `stoch_k<20` |
+| Williams %R | `williams_r` | `williams_r<-80` |
+| CCI | `cci` | `cci<-100` |
+| MFI | `mfi` | `mfi<20` |
+| ROC | `roc` | `roc>0` |
+
+### Trend Indicators
+| Indicator | Syntax | Example |
+|-----------|--------|---------|
+| SMA | `sma{period}` | `price>sma50`, `price>sma200` |
+| EMA | `ema{period}` | `price<ema21`, `ema9>ema21` |
+| ADX | `adx`, `plus_di`, `minus_di` | `adx>25` |
+
+### Volatility Indicators
+| Indicator | Syntax | Example |
+|-----------|--------|---------|
+| Bollinger Bands | `bb_upper`, `bb_lower`, `bb_middle` | `price<bb_lower` |
+| BB Width | `bb_width` | `bb_width<0.1` |
+| BB %B | `bb_percent_b` | `bb_percent_b<0.2` |
+| ATR | `atr`, `atr_pct` | `atr_pct>3` |
+
+### Volume Indicators
+| Indicator | Syntax | Example |
+|-----------|--------|---------|
+| Volume MA | `volume_ma` | `volume>volume_ma` |
+| Volume Ratio | `volume_ratio` | `volume_ratio>2` |
+| OBV | `obv` | - |
+
+### Price Action
+| Indicator | Syntax | Example |
+|-----------|--------|---------|
+| Rolling High/Low | `high_20`, `low_50`, `high_90` | `price>high_20` |
+| Drawdown | `drawdown`, `drawdown_50` | `drawdown<-25` |
+| Price Position | `price_position_90` | `price_position_90<0.3` |
+| Distance from MA | `dist_sma50`, `dist_sma200` | `dist_sma200<-10` |
+
+### Special Conditions
+| Pattern | Syntax | Example |
+|---------|--------|---------|
+| Crossover | `{ind1}_cross_above_{ind2}` | `ema9_cross_above_ema21` |
+| Crossunder | `{ind1}_cross_below_{ind2}` | `price_cross_below_sma200` |
+| Turning Up | `{ind}_turning_up` | `rsi_turning_up` |
+| Turning Down | `{ind}_turning_down` | `macd_hist_turning_down` |
+| Consecutive | `{cond}_for_{n}` | `rsi<30_for_3` |
+| Percentage Ref | `{ind}_{pct}pct` | `price<sma200_98pct` |
 
 ## 📈 Sample Output
 
@@ -102,7 +145,26 @@ The HTML report features:
 --commission    Commission percentage (default: 0.1)
 --output        Output HTML file path
 --name          Strategy name for the report
+--lang          Report language: en or zh (default: en)
 ```
+
+## 🧠 Smart DCA
+
+For dollar-cost averaging strategies with valuation-based allocation:
+
+```bash
+python src/smart_dca.py \
+  --symbol BTC/USDT \
+  --days 1095 \
+  --base-amount 200 \
+  --frequency 7 \
+  --output smart_dca_report.html \
+  --lang zh
+```
+
+Smart DCA uses a multi-factor valuation model:
+- RSI, SMA(200), Bollinger Bands, Drawdown, MACD
+- Adjusts investment amount based on valuation score
 
 ## 🛠 Tech Stack
 
