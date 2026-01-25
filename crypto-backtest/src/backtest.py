@@ -81,9 +81,12 @@ LABELS = {
         'trade_entry_date': 'Entry Date',
         'trade_exit_date': 'Exit Date',
         'trade_type': 'Type',
+        'trade_cost': 'Cost',
+        'trade_quantity': 'Quantity',
         'trade_entry_price': 'Entry Price',
         'trade_exit_price': 'Exit Price',
-        'trade_pnl_label': 'P&L',
+        'trade_pnl_pct': 'P&L %',
+        'trade_pnl_amount': 'P&L $',
         'buy': 'Buy',
         'sell': 'Sell',
         'entry_signal': 'Entry Signal',
@@ -137,9 +140,12 @@ LABELS = {
         'trade_entry_date': '入场日期',
         'trade_exit_date': '出场日期',
         'trade_type': '类型',
+        'trade_cost': '本金',
+        'trade_quantity': '数量',
         'trade_entry_price': '入场价格',
         'trade_exit_price': '出场价格',
-        'trade_pnl_label': '盈亏',
+        'trade_pnl_pct': '盈亏%',
+        'trade_pnl_amount': '盈亏$',
         'buy': '买入',
         'sell': '卖出',
         'entry_signal': '入场信号',
@@ -1070,13 +1076,18 @@ def generate_html_report(
     for t in trades[-15:]:  # Last 15 trades
         pnl_class = 'positive' if t['pnl_pct'] > 0 else 'negative'
         pnl_amount = t.get('pnl_amount', 0)
+        cost = t.get('cost', 0)
+        position_size = t.get('position_size', 0)
         trades_html += f'''
         <tr>
             <td>{str(t['entry_time'])[:16]}</td>
             <td>{str(t['exit_time'])[:16]}</td>
+            <td>${cost:,.2f}</td>
+            <td>{position_size:,.6f}</td>
             <td>${t['entry_price']:,.2f}</td>
             <td>${t['exit_price']:,.2f}</td>
-            <td class="{pnl_class}">{t['pnl_pct']:+.2f}% ({pnl_amount:+,.2f})</td>
+            <td class="{pnl_class}">{t['pnl_pct']:+.2f}%</td>
+            <td class="{pnl_class}">${pnl_amount:+,.2f}</td>
             <td class="exit-reason">{t['exit_reason']}</td>
         </tr>'''
     
@@ -1827,9 +1838,12 @@ def generate_html_report(
                     <tr>
                         <th>{L['trade_entry_date']}</th>
                         <th>{L['trade_exit_date']}</th>
+                        <th>{L['trade_cost']}</th>
+                        <th>{L['trade_quantity']}</th>
                         <th>{L['trade_entry_price']}</th>
                         <th>{L['trade_exit_price']}</th>
-                        <th>{L['trade_pnl_label']}</th>
+                        <th>{L['trade_pnl_pct']}</th>
+                        <th>{L['trade_pnl_amount']}</th>
                         <th>Reason</th>
                     </tr>
                 </thead>

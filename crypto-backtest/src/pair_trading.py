@@ -513,10 +513,12 @@ def generate_html_report(df: pd.DataFrame, metrics: Dict, trades: List[Dict],
             <td>{buy['date'].strftime('%Y-%m-%d %H:%M')}</td>
             <td>{sell['date'].strftime('%Y-%m-%d %H:%M')}</td>
             <td><span class="asset-badge">{asset_name}</span></td>
+            <td>${buy['value']:,.2f}</td>
+            <td>{buy['qty']:,.6f}</td>
             <td>${buy['price']:,.2f}</td>
             <td>${sell['price']:,.2f}</td>
             <td class="{pnl_class}">{pnl_pct:+.2f}%</td>
-            <td class="{pnl_class}">{'+' if sell['pnl'] > 0 else ''}${sell['pnl']:,.2f}</td>
+            <td class="{pnl_class}">${sell['pnl']:+,.2f}</td>
         </tr>'''
     
     # Determine colors
@@ -1016,6 +1018,8 @@ def generate_html_report(df: pd.DataFrame, metrics: Dict, trades: List[Dict],
                         <th>{'入场时间' if lang == 'zh' else 'Entry'}</th>
                         <th>{'出场时间' if lang == 'zh' else 'Exit'}</th>
                         <th>{L['asset']}</th>
+                        <th>{'本金' if lang == 'zh' else 'Cost'}</th>
+                        <th>{'数量' if lang == 'zh' else 'Qty'}</th>
                         <th>{'入场价' if lang == 'zh' else 'Entry $'}</th>
                         <th>{'出场价' if lang == 'zh' else 'Exit $'}</th>
                         <th>{'收益率' if lang == 'zh' else 'Return'}</th>
