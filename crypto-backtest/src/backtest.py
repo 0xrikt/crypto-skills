@@ -1258,62 +1258,80 @@ def generate_html_report(
             border-bottom: none;
         }}
         
-        /* YAML Strategy Display */
-        .strategy-yaml {{
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 24px;
-            overflow-x: auto;
-            font-family: 'JetBrains Mono', monospace;
+        /* Strategy Compact Layout */
+        .strategy-compact {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }}
+        
+        @media (max-width: 768px) {{
+            .strategy-compact {{ grid-template-columns: 1fr; }}
+        }}
+        
+        .strategy-col {{
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }}
+        
+        .strategy-block {{
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            padding: 16px;
+        }}
+        
+        .strategy-block h4 {{
             font-size: 0.85rem;
-            line-height: 1.8;
-        }}
-        
-        .strategy-yaml pre {{
-            margin: 0;
-            white-space: pre;
-        }}
-        
-        .strategy-yaml code {{
-            color: #e2e8f0;
-        }}
-        
-        .yaml-section {{
-            color: #64748b;
-        }}
-        
-        .yaml-key {{
-            color: #f59e0b;
             font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-subtle);
         }}
         
-        .yaml-subkey {{
-            color: #94a3b8;
+        .param-row {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 0.9rem;
         }}
         
-        .yaml-value {{
-            color: #10b981;
+        .param-row span {{
+            color: var(--text-secondary);
         }}
         
-        .yaml-comment {{
-            color: #64748b;
-            font-style: italic;
-        }}
-        
-        .yaml-condition {{
-            padding: 2px 8px;
+        .param-row code {{
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            padding: 3px 8px;
             border-radius: 4px;
-            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
         }}
         
-        .yaml-condition.entry {{
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
+        .param-row code.green {{ color: var(--accent-green); }}
+        .param-row code.red {{ color: var(--accent-red); }}
+        
+        .signal-block code {{
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
         }}
         
-        .yaml-condition.exit {{
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
+        .signal-block.entry code {{ 
+            border-left: 3px solid var(--accent-green);
+            color: var(--accent-green);
+        }}
+        
+        .signal-block.exit code {{ 
+            border-left: 3px solid var(--accent-red);
+            color: var(--accent-red);
         }}
         
         /* Metrics Table */
@@ -1435,50 +1453,39 @@ def generate_html_report(
         
         /* Footer */
         .footer {{
-            margin-top: 64px;
-            padding: 48px;
-            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
-            border: 1px solid var(--border-accent);
-            border-radius: 24px;
+            margin-top: 48px;
+            padding: 24px;
             text-align: center;
+            border-top: 1px solid var(--border-subtle);
         }}
         
         .footer-brand {{
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            background: var(--gradient-cyan);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }}
-        
-        .footer-tagline {{
-            color: var(--text-secondary);
-            margin-bottom: 24px;
-            font-size: 1.1rem;
-        }}
-        
-        .footer-cta {{
-            display: inline-block;
-            padding: 14px 32px;
-            background: var(--gradient-cyan);
-            color: var(--bg-void);
+            font-size: 1rem;
             font-weight: 600;
-            border-radius: 12px;
-            text-decoration: none;
-            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
         }}
         
-        .footer-cta:hover {{
-            transform: scale(1.05);
-            box-shadow: var(--glow-cyan);
+        .footer-link {{
+            display: inline-block;
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            text-decoration: none;
+            padding: 6px 12px;
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }}
+        
+        .footer-link:hover {{
+            background: var(--bg-hover);
         }}
         
         .footer-note {{
-            margin-top: 24px;
+            margin-top: 16px;
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }}
         
         /* Responsive */
@@ -1506,7 +1513,7 @@ def generate_html_report(
             </div>
         </header>
         
-        <!-- Strategy Configuration - Full YAML Display -->
+        <!-- Strategy Configuration - Compact Grid Layout -->
         <section class="section strategy-summary">
             <div class="section-header">
                 <div class="section-icon">📋</div>
@@ -1516,40 +1523,42 @@ def generate_html_report(
             <!-- Original Strategy Idea -->
             {f'<div class="original-idea"><strong>{L["original_idea"]}</strong>"{config.get("description", "")}"</div>' if config.get('description') else ''}
             
-            <div class="strategy-yaml">
-                <pre><code><span class="yaml-section"># ═══════════════════════════════════════════════════════════════
-# STRATEGY CONFIGURATION
-# ═══════════════════════════════════════════════════════════════</span>
-
-<span class="yaml-key">Data:</span>
-  <span class="yaml-subkey">primary_symbol:</span> <span class="yaml-value">{config.get('symbol', 'BTC/USDT')}</span>
-  <span class="yaml-subkey">timeframe:</span> <span class="yaml-value">{config.get('timeframe', '4h')}</span>
-  <span class="yaml-subkey">backtest_period:</span> <span class="yaml-value">{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')} ({config.get('days', 365)} days)</span>
-  <span class="yaml-subkey">indicators:</span> <span class="yaml-value">[RSI, SMA, EMA, BB, ATR, MACD, Volume]</span>
-
-<span class="yaml-key">Signal:</span>
-  <span class="yaml-subkey">entry_conditions:</span>
-    <span class="yaml-subkey">type:</span> <span class="yaml-value">ALL</span>  <span class="yaml-comment"># All conditions must be met</span>
-    <span class="yaml-subkey">conditions:</span>
-{''.join(f'      - <span class="yaml-condition entry">{c}</span>' + chr(10) for c in config.get('entry_display', ['N/A']))}
-  <span class="yaml-subkey">exit_conditions:</span>
-    <span class="yaml-subkey">type:</span> <span class="yaml-value">ANY</span>  <span class="yaml-comment"># Any condition triggers exit</span>
-    <span class="yaml-subkey">conditions:</span>
-{''.join(f'      - <span class="yaml-condition exit">{c}</span>' + chr(10) for c in config.get('exit_display', ['N/A']))}
-<span class="yaml-key">Capital:</span>
-  <span class="yaml-subkey">initial_capital:</span> <span class="yaml-value">${config.get('initial_capital', 10000):,.0f}</span>
-  <span class="yaml-subkey">position_size:</span> <span class="yaml-value">{config.get('position_size', 10)}%</span> <span class="yaml-comment"># Per trade allocation</span>
-  <span class="yaml-subkey">commission:</span> <span class="yaml-value">{config.get('commission', 0.1)}%</span>
-
-<span class="yaml-key">Risk:</span>
-  <span class="yaml-subkey">stop_loss:</span> <span class="yaml-value">{config.get('stop_loss', 5)}%</span>
-  <span class="yaml-subkey">take_profit:</span> <span class="yaml-value">{config.get('take_profit', 15)}%</span>
-  <span class="yaml-subkey">max_positions:</span> <span class="yaml-value">1</span>
-
-<span class="yaml-key">Execution:</span>
-  <span class="yaml-subkey">leverage:</span> <span class="yaml-value">1x</span> <span class="yaml-comment"># Spot only</span>
-  <span class="yaml-subkey">order_type:</span> <span class="yaml-value">market</span>
-  <span class="yaml-subkey">position_side:</span> <span class="yaml-value">long_only</span></code></pre>
+            <div class="strategy-compact">
+                <div class="strategy-col">
+                    <div class="strategy-block">
+                        <h4>📊 Data</h4>
+                        <div class="param-row"><span>Symbol</span><code>{config.get('symbol', 'BTC/USDT')}</code></div>
+                        <div class="param-row"><span>Timeframe</span><code>{config.get('timeframe', '4h')}</code></div>
+                        <div class="param-row"><span>Period</span><code>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</code></div>
+                    </div>
+                    <div class="strategy-block signal-block entry">
+                        <h4>🟢 Entry (ALL)</h4>
+                        {''.join(f'<code>{c}</code>' for c in config.get('entry_display', ['N/A']))}
+                    </div>
+                    <div class="strategy-block signal-block exit">
+                        <h4>🔴 Exit (ANY)</h4>
+                        {''.join(f'<code>{c}</code>' for c in config.get('exit_display', ['N/A']))}
+                    </div>
+                </div>
+                <div class="strategy-col">
+                    <div class="strategy-block">
+                        <h4>💰 Capital</h4>
+                        <div class="param-row"><span>Initial</span><code>${config.get('initial_capital', 10000):,.0f}</code></div>
+                        <div class="param-row"><span>Position Size</span><code>{config.get('position_size', 10)}%</code></div>
+                        <div class="param-row"><span>Commission</span><code>{config.get('commission', 0.1)}%</code></div>
+                    </div>
+                    <div class="strategy-block">
+                        <h4>⚠️ Risk</h4>
+                        <div class="param-row"><span>Stop Loss</span><code class="red">-{config.get('stop_loss', 5)}%</code></div>
+                        <div class="param-row"><span>Take Profit</span><code class="green">+{config.get('take_profit', 15)}%</code></div>
+                    </div>
+                    <div class="strategy-block">
+                        <h4>⚙️ Execution</h4>
+                        <div class="param-row"><span>Leverage</span><code>1x (Spot)</code></div>
+                        <div class="param-row"><span>Order Type</span><code>Market</code></div>
+                        <div class="param-row"><span>Side</span><code>Long Only</code></div>
+                    </div>
+                </div>
             </div>
         </section>
         
@@ -1662,13 +1671,11 @@ def generate_html_report(
         </section>
         
         <footer class="footer">
-            <div class="footer-brand">🚀 Crypto Backtest Skill</div>
-            <div class="footer-tagline">{L['tagline']}</div>
-            <a href="https://github.com/0xrikt/crypto-skills" class="footer-cta" target="_blank">
-                ⭐ Star on GitHub
+            <div class="footer-brand">Crypto Backtest Skill</div>
+            <a href="https://github.com/0xrikt/crypto-skills" class="footer-link" target="_blank">
+                github.com/0xrikt/crypto-skills
             </a>
             <div class="footer-note">
-                {L['share_cta']}<br>
                 {L['generated']} {datetime.now().strftime('%Y-%m-%d %H:%M')} • {L['disclaimer']}
             </div>
         </footer>
@@ -1744,7 +1751,7 @@ def generate_html_report(
                 type: 'scatter',
                 mode: 'markers',
                 name: 'Buy',
-                marker: {{ symbol: 'triangle-up', size: 14, color: '#10b981' }}
+                marker: {{ symbol: 'triangle-up', size: 16, color: '#3b82f6', line: {{ color: '#1e40af', width: 2 }} }}
             }},
             {{
                 x: {json.dumps(sell_times)},
@@ -1752,7 +1759,7 @@ def generate_html_report(
                 type: 'scatter',
                 mode: 'markers',
                 name: 'Sell',
-                marker: {{ symbol: 'triangle-down', size: 14, color: '#ef4444' }}
+                marker: {{ symbol: 'triangle-down', size: 16, color: '#f59e0b', line: {{ color: '#b45309', width: 2 }} }}
             }}
         ], {{
             ...chartTheme,
