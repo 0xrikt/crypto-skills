@@ -140,6 +140,7 @@ LABELS = {
         'exit_signal': '出场信号',
         'price': '价格',
         'equity': '资金',
+        'days': '天',
     }
 }
 
@@ -152,7 +153,7 @@ def fetch_ohlcv(
     symbol: str = "BTC/USDT",
     timeframe: str = "4h",
     days: int = 365,
-    exchange_id: str = "binance"
+    exchange_id: str = "okx"
 ) -> pd.DataFrame:
     """Fetch historical OHLCV data from exchange."""
     
@@ -1799,7 +1800,7 @@ def main():
     parser.add_argument('--symbol', default='BTC/USDT', help='Trading pair')
     parser.add_argument('--timeframe', default='4h', help='Candle timeframe')
     parser.add_argument('--days', type=int, default=365, help='Backtest period in days')
-    parser.add_argument('--exchange', default='binance', help='Exchange to fetch data from')
+    parser.add_argument('--exchange', default='okx', help='Exchange to fetch data from (okx, kucoin, kraken, coinbase, bybit)')
     parser.add_argument('--entry', default='rsi<30', help='Entry conditions (comma-separated)')
     parser.add_argument('--exit', default='rsi>70', help='Exit conditions (comma-separated)')
     parser.add_argument('--stop-loss', type=float, default=5, help='Stop loss percentage')

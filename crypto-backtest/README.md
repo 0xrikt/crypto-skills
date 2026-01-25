@@ -135,7 +135,7 @@ The HTML report features:
 --symbol        Trading pair (default: BTC/USDT)
 --timeframe     Candle timeframe: 1m, 5m, 15m, 1h, 4h, 1d (default: 4h)
 --days          Backtest period in days (default: 365)
---exchange      Exchange to fetch data from (default: binance)
+--exchange      Exchange to fetch data from (default: okx). Options: okx, kucoin, kraken, coinbase, bybit
 --entry         Entry conditions, comma-separated (default: rsi<30)
 --exit          Exit conditions, comma-separated (default: rsi>70)
 --stop-loss     Stop loss percentage (default: 5)
