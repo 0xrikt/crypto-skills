@@ -1,0 +1,5 @@
+ccxt>=4.0.0
+pandas>=2.0.0
+pandas-ta>=0.3.14b
+numpy>=1.24.0
+plotly>=5.15.0
