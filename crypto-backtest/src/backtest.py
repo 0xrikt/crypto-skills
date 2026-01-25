@@ -1251,12 +1251,12 @@ def generate_html_report(
         
         <footer class="footer">
             <div class="footer-brand">🚀 Crypto Backtest Skill</div>
-            <div class="footer-tagline">几分钟验证你的交易策略想法</div>
+            <div class="footer-tagline">Validate your trading ideas in minutes</div>
             <a href="https://github.com/0xrikt/crypto-skills" class="footer-cta" target="_blank">
                 ⭐ Star on GitHub
             </a>
             <div class="footer-note">
-                截图分享你的回测结果，帮助更多人发现这个工具！<br>
+                Share your backtest results to help others discover this tool!<br>
                 Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')} • Past performance does not guarantee future results
             </div>
         </footer>

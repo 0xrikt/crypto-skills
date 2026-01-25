@@ -1,6 +1,6 @@
 # 🚀 Crypto Backtest Skill
 
-**几分钟验证你的交易策略想法**
+**Validate your trading ideas in minutes**
 
 Transform natural language trading ideas into validated strategies with professional backtesting, beautiful reports, and runnable code.
 

@@ -499,74 +499,74 @@ def generate_html_report(results: dict, config: dict) -> str:
     <div class="container">
         <header class="header">
             <div class="header-badge">Smart DCA Backtest</div>
-            <h1>智能定投 vs 等额定投</h1>
+            <h1>Smart DCA vs Fixed DCA</h1>
             <div class="header-meta">
                 <span>📊 {config.get('symbol', 'BTC/USDT')}</span>
-                <span>📅 {len(smart['records'])} 期定投</span>
-                <span>💰 基准 {config.get('base_amount', 200)} USDT/期</span>
+                <span>📅 {len(smart['records'])} periods</span>
+                <span>💰 Base {config.get('base_amount', 200)} USDT/period</span>
             </div>
         </header>
         
         <div class="comparison-hero">
             <div class="strategy-card {'winner' if comp['extra_return_pct'] > 0 else ''}">
-                <h3>🧠 智能定投</h3>
+                <h3>🧠 Smart DCA</h3>
                 <div class="value {'positive' if smart['return_pct'] > 0 else 'negative'}">{smart['return_pct']:+.1f}%</div>
-                <div class="sub">总投入 ${smart['total_invested']:,.0f}</div>
-                <div class="sub">最终价值 ${smart['final_value']:,.0f}</div>
-                <div class="sub">平均成本 ${smart['avg_cost']:,.0f}</div>
+                <div class="sub">Total Invested ${smart['total_invested']:,.0f}</div>
+                <div class="sub">Final Value ${smart['final_value']:,.0f}</div>
+                <div class="sub">Avg Cost ${smart['avg_cost']:,.0f}</div>
             </div>
             
             <div class="vs-badge">VS</div>
             
             <div class="strategy-card {'winner' if comp['extra_return_pct'] < 0 else ''}">
-                <h3>📊 等额定投</h3>
+                <h3>📊 Fixed DCA</h3>
                 <div class="value {'positive' if fixed['return_pct'] > 0 else 'negative'}">{fixed['return_pct']:+.1f}%</div>
-                <div class="sub">总投入 ${fixed['total_invested']:,.0f}</div>
-                <div class="sub">最终价值 ${fixed['final_value']:,.0f}</div>
-                <div class="sub">平均成本 ${fixed['avg_cost']:,.0f}</div>
+                <div class="sub">Total Invested ${fixed['total_invested']:,.0f}</div>
+                <div class="sub">Final Value ${fixed['final_value']:,.0f}</div>
+                <div class="sub">Avg Cost ${fixed['avg_cost']:,.0f}</div>
             </div>
         </div>
         
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="value" style="color: {'var(--accent-green)' if comp['extra_return_pct'] > 0 else 'var(--accent-red)'}">{comp['extra_return_pct']:+.2f}%</div>
-                <div class="label">智能定投超额收益</div>
+                <div class="label">Smart DCA Alpha</div>
             </div>
             <div class="metric-card">
                 <div class="value">{comp['cost_savings_pct']:+.2f}%</div>
-                <div class="label">平均成本降低</div>
+                <div class="label">Cost Reduction</div>
             </div>
             <div class="metric-card">
                 <div class="value">{smart['total_btc']:.6f}</div>
-                <div class="label">智能定投累计 BTC</div>
+                <div class="label">Smart DCA BTC</div>
             </div>
             <div class="metric-card">
                 <div class="value">{fixed['total_btc']:.6f}</div>
-                <div class="label">等额定投累计 BTC</div>
+                <div class="label">Fixed DCA BTC</div>
             </div>
         </div>
         
         <section class="section">
-            <h2>📈 资产增长对比</h2>
+            <h2>📈 Portfolio Growth</h2>
             <div class="chart-container" id="value-chart"></div>
         </section>
         
         <section class="section">
-            <h2>📊 估值分数 & 投入金额</h2>
+            <h2>📊 Valuation Score & Investment</h2>
             <div class="chart-container" id="allocation-chart"></div>
         </section>
         
         <section class="section">
-            <h2>💰 BTC 价格走势</h2>
+            <h2>💰 BTC Price</h2>
             <div class="chart-container" id="price-chart"></div>
         </section>
         
         <footer class="footer">
             <div class="footer-brand">🚀 Crypto Backtest Skill</div>
-            <div style="color: var(--text-secondary);">几分钟验证你的交易策略想法</div>
+            <div style="color: var(--text-secondary);">Validate your trading ideas in minutes</div>
             <a href="https://github.com/0xrikt/crypto-skills" class="footer-cta" target="_blank">⭐ Star on GitHub</a>
             <div style="margin-top: 16px; color: var(--text-secondary); font-size: 0.85rem;">
-                截图分享你的回测结果！<br>
+                Share your results to help others discover this tool!<br>
                 Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')} • Past performance ≠ future results
             </div>
         </footer>
@@ -588,7 +588,7 @@ def generate_html_report(results: dict, config: dict) -> str:
                 y: {json.dumps(smart_values)},
                 type: 'scatter',
                 mode: 'lines',
-                name: '智能定投',
+                name: 'Smart DCA',
                 line: {{ color: '#00ff9d', width: 2 }},
                 fill: 'tozeroy',
                 fillcolor: 'rgba(0,255,157,0.1)'
@@ -598,7 +598,7 @@ def generate_html_report(results: dict, config: dict) -> str:
                 y: {json.dumps(fixed_values)},
                 type: 'scatter',
                 mode: 'lines',
-                name: '等额定投',
+                name: 'Fixed DCA',
                 line: {{ color: '#00d9ff', width: 2, dash: 'dash' }}
             }},
             {{
@@ -606,7 +606,7 @@ def generate_html_report(results: dict, config: dict) -> str:
                 y: {json.dumps(smart_invested)},
                 type: 'scatter',
                 mode: 'lines',
-                name: '智能投入成本',
+                name: 'Smart Cost Basis',
                 line: {{ color: '#ffd93d', width: 1, dash: 'dot' }}
             }}
         ], {{
@@ -624,7 +624,7 @@ def generate_html_report(results: dict, config: dict) -> str:
                 y: {json.dumps(scores)},
                 type: 'scatter',
                 mode: 'lines',
-                name: '估值分数',
+                name: 'Valuation Score',
                 line: {{ color: '#a855f7', width: 2 }},
                 yaxis: 'y'
             }},
@@ -632,7 +632,7 @@ def generate_html_report(results: dict, config: dict) -> str:
                 x: {json.dumps(timestamps)},
                 y: {json.dumps(amounts)},
                 type: 'bar',
-                name: '投入金额',
+                name: 'Investment',
                 marker: {{ 
                     color: {json.dumps(amounts)},
                     colorscale: [[0, '#ff4757'], [0.5, '#ffd93d'], [1, '#00ff9d']]
@@ -643,8 +643,8 @@ def generate_html_report(results: dict, config: dict) -> str:
             ...theme,
             height: 350,
             margin: {{ t: 20, r: 60, b: 40, l: 60 }},
-            yaxis: {{ ...theme.yaxis, title: '估值分数', side: 'left' }},
-            yaxis2: {{ title: '投入金额 ($)', side: 'right', overlaying: 'y', tickformat: '$,.0f' }},
+            yaxis: {{ ...theme.yaxis, title: 'Valuation Score', side: 'left' }},
+            yaxis2: {{ title: 'Investment ($)', side: 'right', overlaying: 'y', tickformat: '$,.0f' }},
             legend: {{ orientation: 'h', y: 1.1 }},
             shapes: [
                 {{ type: 'line', y0: 0, y1: 0, x0: 0, x1: 1, xref: 'paper', yref: 'y', line: {{ dash: 'dash', color: 'rgba(255,255,255,0.3)' }} }}
@@ -729,28 +729,28 @@ def main():
     print("📈 RESULTS COMPARISON")
     print(f"{'='*50}")
     print()
-    print("🧠 智能定投:")
-    print(f"   总投入:     ${smart['total_invested']:,.0f}")
-    print(f"   累计 BTC:   {smart['total_btc']:.6f}")
-    print(f"   最终价值:   ${smart['final_value']:,.0f}")
-    print(f"   收益率:     {smart['return_pct']:+.2f}%")
-    print(f"   平均成本:   ${smart['avg_cost']:,.0f}")
+    print("🧠 Smart DCA:")
+    print(f"   Invested:    ${smart['total_invested']:,.0f}")
+    print(f"   Total BTC:   {smart['total_btc']:.6f}")
+    print(f"   Final Value: ${smart['final_value']:,.0f}")
+    print(f"   Return:      {smart['return_pct']:+.2f}%")
+    print(f"   Avg Cost:    ${smart['avg_cost']:,.0f}")
     print()
-    print("📊 等额定投:")
-    print(f"   总投入:     ${fixed['total_invested']:,.0f}")
-    print(f"   累计 BTC:   {fixed['total_btc']:.6f}")
-    print(f"   最终价值:   ${fixed['final_value']:,.0f}")
-    print(f"   收益率:     {fixed['return_pct']:+.2f}%")
-    print(f"   平均成本:   ${fixed['avg_cost']:,.0f}")
+    print("📊 Fixed DCA:")
+    print(f"   Invested:    ${fixed['total_invested']:,.0f}")
+    print(f"   Total BTC:   {fixed['total_btc']:.6f}")
+    print(f"   Final Value: ${fixed['final_value']:,.0f}")
+    print(f"   Return:      {fixed['return_pct']:+.2f}%")
+    print(f"   Avg Cost:    ${fixed['avg_cost']:,.0f}")
     print()
     print(f"{'='*50}")
     
     if comp['extra_return_pct'] > 0:
-        print(f"✅ 智能定投胜出！超额收益 {comp['extra_return_pct']:+.2f}%")
+        print(f"✅ Smart DCA wins! Alpha: {comp['extra_return_pct']:+.2f}%")
     else:
-        print(f"📊 等额定投胜出，差距 {comp['extra_return_pct']:.2f}%")
+        print(f"📊 Fixed DCA wins by {abs(comp['extra_return_pct']):.2f}%")
     
-    print(f"   平均成本降低: {comp['cost_savings_pct']:.2f}%")
+    print(f"   Cost reduction: {comp['cost_savings_pct']:.2f}%")
 
 
 if __name__ == '__main__':

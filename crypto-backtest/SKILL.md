@@ -4,7 +4,7 @@ description: |
   Backtest crypto trading strategies from natural language ideas.
   Use when: user describes trading ideas, wants to validate strategies, mentions
   "backtest", "trading strategy", "buy low sell high", "RSI", "MACD", "oversold",
-  "overbought", "crypto strategy", "验证策略", "回测", "交易策略", "定投", "DCA", or similar.
+  "overbought", "crypto strategy", "validate strategy", "backtest", "DCA", or similar.
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
@@ -24,7 +24,7 @@ You turn vague trading intuitions into **professional-grade, multi-dimensional s
 
 When translating natural language to technical conditions, **NEVER use single indicators**. Always combine multiple dimensions:
 
-### 🎯 "低估/Undervalued/Cheap/Oversold/Dip" → Multi-Factor Valuation Model
+### 🎯 "Undervalued/Cheap/Oversold/Dip" → Multi-Factor Valuation Model
 
 **DON'T:** `RSI(14) < 30` (too simplistic, easily fooled by trends)
 
@@ -44,7 +44,7 @@ When translating natural language to technical conditions, **NEVER use single in
 - Score 2.0-3.0: Moderate undervaluation
 - Score < 2.0: Weak/no signal
 
-### 📈 "高估/Overvalued/Expensive/Overbought" → Multi-Factor Model
+### 📈 "Overvalued/Expensive/Overbought" → Multi-Factor Model
 
 | Dimension | Indicator | Bearish Signal | Weight |
 |-----------|-----------|----------------|--------|
@@ -55,7 +55,7 @@ When translating natural language to technical conditions, **NEVER use single in
 | **Momentum Divergence** | MACD Histogram | Turning negative while price high | 0.5 |
 | **Volume Dry-up** | Volume vs MA(20) | Volume declining on rally | 0.5 |
 
-### 🚀 "趋势/Trend/Bullish/Uptrend" → Multi-Timeframe Confirmation
+### 🚀 "Trend/Bullish/Uptrend" → Multi-Timeframe Confirmation
 
 **DON'T:** `Price > EMA(21)` (single timeframe, easily whipsawed)
 
@@ -72,7 +72,7 @@ When translating natural language to technical conditions, **NEVER use single in
 **Entry**: All conditions aligned
 **Exit**: Short-term reversal (EMA9 < EMA21) OR momentum loss (MACD cross down)
 
-### 💥 "突破/Breakout" → Volume-Confirmed Breakout
+### 💥 "Breakout" → Volume-Confirmed Breakout
 
 **DON'T:** `Price > BB_Upper` (many false breakouts)
 
@@ -86,7 +86,7 @@ When translating natural language to technical conditions, **NEVER use single in
 | RSI(14) > 50 but < 80 | Momentum without exhaustion |
 | Previous 5 candles: tight range (BB width contracting) | Coiled energy |
 
-### 📊 "定投/DCA" → Smart DCA with Valuation Adjustment
+### 📊 "DCA" → Smart DCA with Valuation Adjustment
 
 **DON'T:** Fixed amount every period (misses opportunities)
 
@@ -100,7 +100,7 @@ When translating natural language to technical conditions, **NEVER use single in
 | -3.0 to -1.5 | 🔴 Overvalued | Base × 0.5 |
 | ≤ -3.0 | 🔴🔴 Extreme overvaluation | Base × 0.25 |
 
-### 🔄 "均值回归/Mean Reversion" → Statistical Deviation Strategy
+### 🔄 "Mean Reversion" → Statistical Deviation Strategy
 
 | Condition | Entry | Exit |
 |-----------|-------|------|
@@ -158,7 +158,7 @@ Format:
 - Max Drawdown Tolerance: X%
 
 ---
-**确认运行回测？或告诉我需要调整的地方。**
+**Confirm to run backtest? Or let me know what to adjust.**
 ```
 
 ### Step 3: Run Backtest
