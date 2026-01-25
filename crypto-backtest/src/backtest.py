@@ -991,56 +991,62 @@ def generate_html_report(
             margin-bottom: 48px;
         }}
         
-        .header-badge {{
-            display: inline-block;
-            padding: 6px 16px;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-accent);
-            border-radius: 20px;
-            font-size: 0.75rem;
-            letter-spacing: 2px;
+        .header-subtitle {{
+            font-size: 0.85rem;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            color: var(--accent-cyan);
-            margin-bottom: 24px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
         }}
         
-        .header h1 {{
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 700;
-            letter-spacing: -0.02em;
+        .header-title {{
+            font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+            font-weight: 600;
+            letter-spacing: -0.01em;
             margin-bottom: 16px;
             color: var(--text-primary);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.3;
+        }}
+        
+        .header-brand {{
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }}
+        
+        .header-brand a {{
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 500;
+        }}
+        
+        .header-brand a:hover {{
+            text-decoration: underline;
         }}
         
         .header-meta {{
             display: flex;
             justify-content: center;
-            gap: 32px;
+            gap: 24px;
             flex-wrap: wrap;
             color: var(--text-secondary);
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }}
         
         .header-meta span {{
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }}
         
         .header-meta .dot {{
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             background: var(--accent-cyan);
             border-radius: 50%;
-        }}
-        
-        .header-idea {{
-            max-width: 700px;
-            margin: 0 auto 20px;
-            font-size: 1.15rem;
-            color: var(--text-secondary);
-            font-style: italic;
-            line-height: 1.5;
         }}
         
         /* Metrics Grid */
@@ -1267,56 +1273,55 @@ def generate_html_report(
             border-bottom: none;
         }}
         
-        /* Strategy Compact Layout */
+        /* Strategy Compact Layout - 3x2 Grid */
         .strategy-compact {{
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }}
         
-        @media (max-width: 768px) {{
+        @media (max-width: 992px) {{
+            .strategy-compact {{ grid-template-columns: repeat(2, 1fr); }}
+        }}
+        
+        @media (max-width: 600px) {{
             .strategy-compact {{ grid-template-columns: 1fr; }}
-        }}
-        
-        .strategy-col {{
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
         }}
         
         .strategy-block {{
             background: var(--bg-elevated);
-            border-radius: 10px;
-            padding: 16px;
+            border-radius: 8px;
+            padding: 12px 14px;
         }}
         
         .strategy-block h4 {{
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }}
         
         .param-row {{
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 0;
-            font-size: 0.9rem;
+            padding: 4px 0;
+            font-size: 0.85rem;
         }}
         
         .param-row span {{
             color: var(--text-secondary);
+            font-size: 0.8rem;
         }}
         
         .param-row code {{
             font-family: 'JetBrains Mono', monospace;
             background: var(--bg-deep);
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8rem;
             color: var(--accent-cyan);
         }}
         
@@ -1324,17 +1329,17 @@ def generate_html_report(
         .param-row code.red {{ color: var(--accent-red); }}
         
         .signal-block code {{
-            display: block;
+            display: inline-block;
             font-family: 'JetBrains Mono', monospace;
             background: var(--bg-deep);
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            margin-bottom: 6px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            margin: 2px 4px 2px 0;
         }}
         
         .signal-block.entry code {{ 
-            border-left: 3px solid var(--accent-green);
+            border-left: 2px solid var(--accent-green);
             color: var(--accent-green);
         }}
         
@@ -1493,32 +1498,44 @@ def generate_html_report(
         }}
         
         .footer-tagline {{
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 500;
             color: var(--text-primary);
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }}
         
-        .footer-brand {{
-            font-size: 0.9rem;
+        .footer-github {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
             color: var(--text-secondary);
-            margin-bottom: 12px;
-        }}
-        
-        .footer-brand a {{
-            color: var(--accent-cyan);
             text-decoration: none;
-            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
         }}
         
-        .footer-brand a:hover {{
-            text-decoration: underline;
+        .footer-github:hover {{
+            background: var(--bg-hover);
+            border-color: var(--border-accent);
+            color: var(--text-primary);
+        }}
+        
+        .footer-github svg {{
+            opacity: 0.7;
+        }}
+        
+        .footer-github:hover svg {{
+            opacity: 1;
         }}
         
         .footer-note {{
-            margin-top: 8px;
+            margin-top: 16px;
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }}
         
         /* Responsive */
@@ -1536,14 +1553,16 @@ def generate_html_report(
     
     <div class="container">
         <header class="header">
-            <div class="header-badge">{L['title']}</div>
-            <h1>{config.get('name', 'Trading Strategy')}</h1>
-            {f'<p class="header-idea">"{config.get("description", "")}"</p>' if config.get('description') else ''}
+            <div class="header-subtitle">{L['title']}</div>
+            <h1 class="header-title">{config.get('description', config.get('name', 'Trading Strategy'))}</h1>
+            <div class="header-brand">
+                Created by <a href="https://github.com/0xrikt/crypto-skills" target="_blank">Crypto Backtest Skill</a>
+            </div>
             <div class="header-meta">
                 <span><div class="dot"></div>{config.get('symbol', 'BTC/USDT')}</span>
-                <span><div class="dot"></div>{config.get('timeframe', '4h')} {L['timeframe']}</span>
-                <span><div class="dot"></div>{config.get('actual_days', config.get('days', 365))} days</span>
-                <span><div class="dot"></div>{metrics['total_trades']} {L['total_trades'].lower()}</span>
+                <span><div class="dot"></div>{config.get('timeframe', '4h')}</span>
+                <span><div class="dot"></div>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</span>
+                <span><div class="dot"></div>{metrics['total_trades']} trades</span>
             </div>
         </header>
         
@@ -1555,51 +1574,62 @@ def generate_html_report(
             </div>
             
             <div class="strategy-compact">
-                <div class="strategy-col">
-                    <div class="strategy-block">
-                        <h4>📊 Data</h4>
-                        <div class="param-row"><span>Symbol</span><code>{config.get('symbol', 'BTC/USDT')}</code></div>
-                        <div class="param-row"><span>Timeframe</span><code>{config.get('timeframe', '4h')}</code></div>
-                        <div class="param-row"><span>Period</span><code>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</code></div>
-                    </div>
-                    <div class="strategy-block signal-block entry">
-                        <h4>🟢 Entry (ALL)</h4>
-                        {''.join(f'<code>{c}</code>' for c in config.get('entry_display', ['N/A']))}
-                    </div>
-                    <div class="strategy-block signal-block exit">
-                        <h4>🔴 Exit (ANY)</h4>
-                        {''.join(f'<code>{c}</code>' for c in config.get('exit_display', ['N/A']))}
-                    </div>
+                <div class="strategy-block">
+                    <h4>📊 Data</h4>
+                    <div class="param-row"><span>Symbol</span><code>{config.get('symbol', 'BTC/USDT')}</code></div>
+                    <div class="param-row"><span>Timeframe</span><code>{config.get('timeframe', '4h')}</code></div>
+                    <div class="param-row"><span>Period</span><code>{config.get('start_date', 'N/A')} → {config.get('end_date', 'N/A')}</code></div>
                 </div>
-                <div class="strategy-col">
-                    <div class="strategy-block">
-                        <h4>💰 Capital</h4>
-                        <div class="param-row"><span>Initial</span><code>${config.get('initial_capital', 10000):,.0f}</code></div>
-                        <div class="param-row"><span>Position Size</span><code>{config.get('position_size', 10)}%</code></div>
-                        <div class="param-row"><span>Commission</span><code>{config.get('commission', 0.1)}%</code></div>
-                    </div>
-                    <div class="strategy-block">
-                        <h4>⚠️ Risk</h4>
-                        <div class="param-row"><span>Stop Loss</span><code class="red">-{config.get('stop_loss', 5)}%</code></div>
-                        <div class="param-row"><span>Take Profit</span><code class="green">+{config.get('take_profit', 15)}%</code></div>
-                    </div>
-                    <div class="strategy-block">
-                        <h4>⚙️ Execution</h4>
-                        <div class="param-row"><span>Leverage</span><code>1x (Spot)</code></div>
-                        <div class="param-row"><span>Order Type</span><code>Market</code></div>
-                        <div class="param-row"><span>Side</span><code>Long Only</code></div>
-                    </div>
+                <div class="strategy-block signal-block entry">
+                    <h4>🟢 Entry</h4>
+                    {''.join(f'<code>{c}</code>' for c in config.get('entry_display', ['N/A']))}
+                </div>
+                <div class="strategy-block signal-block exit">
+                    <h4>🔴 Exit</h4>
+                    {''.join(f'<code>{c}</code>' for c in config.get('exit_display', ['N/A']))}
+                </div>
+                <div class="strategy-block">
+                    <h4>💰 Capital</h4>
+                    <div class="param-row"><span>Initial</span><code>${config.get('initial_capital', 10000):,.0f}</code></div>
+                    <div class="param-row"><span>Position</span><code>{config.get('position_size', 10)}%</code></div>
+                    <div class="param-row"><span>Fee</span><code>{config.get('commission', 0.1)}%</code></div>
+                </div>
+                <div class="strategy-block">
+                    <h4>⚠️ Risk</h4>
+                    <div class="param-row"><span>Stop Loss</span><code class="red">-{config.get('stop_loss', 5)}%</code></div>
+                    <div class="param-row"><span>Take Profit</span><code class="green">+{config.get('take_profit', 15)}%</code></div>
+                </div>
+                <div class="strategy-block">
+                    <h4>⚙️ Execution</h4>
+                    <div class="param-row"><span>Leverage</span><code>1x</code></div>
+                    <div class="param-row"><span>Type</span><code>Market</code></div>
+                    <div class="param-row"><span>Side</span><code>Long</code></div>
                 </div>
             </div>
         </section>
         
-        <!-- Price & Signals - Most visually impactful, right after strategy -->
+        <!-- Trade History - Chart + Table combined -->
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">📈</div>
-                <h2>{L['price_signals']}</h2>
+                <h2>{L['trade_table_title']}</h2>
             </div>
             <div class="chart-container" id="price-chart"></div>
+            <table class="trades-table">
+                <thead>
+                    <tr>
+                        <th>{L['trade_entry_date']}</th>
+                        <th>{L['trade_exit_date']}</th>
+                        <th>{L['trade_entry_price']}</th>
+                        <th>{L['trade_exit_price']}</th>
+                        <th>{L['trade_pnl_label']}</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {trades_html}
+                </tbody>
+            </table>
         </section>
         
         <!-- Performance Metrics - Professional Table Layout -->
@@ -1683,34 +1713,14 @@ def generate_html_report(
             </section>
         </div>
         
-        <!-- Trade History -->
-        <section class="section">
-            <div class="section-header">
-                <div class="section-icon">📋</div>
-                <h2>{L['trade_table_title']}</h2>
-            </div>
-            <table class="trades-table">
-                <thead>
-                    <tr>
-                        <th>{L['trade_entry_date']}</th>
-                        <th>{L['trade_exit_date']}</th>
-                        <th>{L['trade_entry_price']}</th>
-                        <th>{L['trade_exit_price']}</th>
-                        <th>{L['trade_pnl_label']}</th>
-                        <th>Reason</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {trades_html}
-                </tbody>
-            </table>
-        </section>
-        
         <footer class="footer">
             <div class="footer-tagline">{L['tagline']}</div>
-            <div class="footer-brand">
-                Created by <a href="https://github.com/0xrikt/crypto-skills" target="_blank">Crypto Backtest Skill</a>
-            </div>
+            <a href="https://github.com/0xrikt/crypto-skills" target="_blank" class="footer-github">
+                <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                <span>github.com/0xrikt/crypto-skills</span>
+            </a>
             <div class="footer-note">
                 {L['generated']} {datetime.now().strftime('%Y-%m-%d %H:%M')} • {L['disclaimer']}
             </div>
