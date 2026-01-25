@@ -1187,22 +1187,6 @@ def generate_html_report(
             line-height: 1.3;
         }}
         
-        .header-brand {{
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-        }}
-        
-        .header-brand a {{
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-weight: 500;
-        }}
-        
-        .header-brand a:hover {{
-            text-decoration: underline;
-        }}
-        
         .header-meta {{
             display: flex;
             justify-content: center;
@@ -1778,9 +1762,6 @@ def generate_html_report(
         <header class="header">
             <div class="header-subtitle">{L['title']}</div>
             <h1 class="header-title">{config.get('description', config.get('name', 'Trading Strategy'))}</h1>
-            <div class="header-brand">
-                Created by <a href="https://github.com/0xrikt/crypto-skills" target="_blank">Crypto Backtest Skill</a>
-            </div>
             <div class="header-meta">
                 <span><div class="dot"></div>{config.get('symbol', 'BTC/USDT')}</span>
                 <span><div class="dot"></div>{config.get('timeframe', '4h')}</span>
