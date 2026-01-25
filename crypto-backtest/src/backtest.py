@@ -26,6 +26,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
+import html
 
 import ccxt
 import numpy as np
@@ -1452,34 +1453,45 @@ def generate_html_report(
         .strategy-compact {{
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-auto-rows: 1fr;
+            grid-template-rows: repeat(2, 140px);
             gap: 12px;
         }}
         
         @media (max-width: 900px) {{
-            .strategy-compact {{ grid-template-columns: repeat(2, 1fr); }}
+            .strategy-compact {{ 
+                grid-template-columns: repeat(2, 1fr); 
+                grid-template-rows: repeat(3, 140px);
+            }}
         }}
         
         @media (max-width: 600px) {{
-            .strategy-compact {{ grid-template-columns: 1fr; }}
+            .strategy-compact {{ 
+                grid-template-columns: 1fr; 
+                grid-template-rows: repeat(6, auto);
+            }}
         }}
         
         .strategy-block {{
             background: var(--bg-elevated);
             border-radius: 8px;
-            padding: 16px 18px;
+            padding: 14px 16px;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }}
         
         .strategy-block h4 {{
             font-size: 0.7rem;
             font-weight: 700;
             color: var(--text-muted);
-            margin-bottom: auto;
-            padding-bottom: 10px;
+            margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            flex-shrink: 0;
+        }}
+        
+        .strategy-block .param-row:first-of-type {{
+            margin-top: auto;
         }}
         
         .signal-codes {{
@@ -2342,8 +2354,8 @@ def main():
         'end_date': end_date,
         'entry_str': args.entry,
         'exit_str': args.exit,
-        'entry_display': [c.strip() for c in args.entry.split(',')],
-        'exit_display': [c.strip() for c in args.exit.split(',')] + [f'Stop Loss: -{args.stop_loss}%', f'Take Profit: +{args.take_profit}%'],
+        'entry_display': [html.escape(c.strip()) for c in args.entry.split(',')],
+        'exit_display': [html.escape(c.strip()) for c in args.exit.split(',')] + [f'Stop Loss: -{args.stop_loss}%', f'Take Profit: +{args.take_profit}%'],
         'stop_loss': args.stop_loss,
         'take_profit': args.take_profit,
         'position_size': args.position_size,
@@ -2353,10 +2365,10 @@ def main():
     
     # Generate HTML report
     print("📄 Generating report...")
-    html = generate_html_report(df, results, metrics, config, lang=args.lang)
+    report_html = generate_html_report(df, results, metrics, config, lang=args.lang)
     
     output_path = Path(args.output)
-    output_path.write_text(html)
+    output_path.write_text(report_html)
     print(f"   Saved: {output_path.absolute()}")
     
     # Generate strategy code
