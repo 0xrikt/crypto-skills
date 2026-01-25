@@ -1101,7 +1101,6 @@ def generate_html_report(
             <td>${t['exit_price']:,.2f}</td>
             <td class="{pnl_class}">{t['pnl_pct']:+.2f}%</td>
             <td class="{pnl_class}">${pnl_amount:+,.2f}</td>
-            <td class="exit-reason">{t['exit_reason']}</td>
         </tr>'''
     
     # Generate strategy analysis
@@ -1718,13 +1717,6 @@ def generate_html_report(
         .trades-table .positive {{ color: var(--accent-green); }}
         .trades-table .negative {{ color: var(--accent-red); }}
         
-        .exit-reason {{
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            background: var(--bg-elevated);
-        }}
-        
         /* Footer */
         .footer {{
             margin-top: 48px;
@@ -1815,8 +1807,8 @@ def generate_html_report(
     
     <div class="container">
         <header class="header">
-            <div class="header-subtitle">{L['title']}</div>
-            <h1 class="header-title">{config.get('description', config.get('name', 'Trading Strategy'))}</h1>
+            <h1 class="header-title">{L['title']}</h1>
+            <div class="header-subtitle">{config.get('description') or config.get('name') or ''}</div>
             <div class="header-meta">
                 <span><div class="dot"></div>{config.get('symbol', 'BTC/USDT')}</span>
                 <span><div class="dot"></div>{config.get('timeframe', '4h')}</span>
@@ -1887,7 +1879,6 @@ def generate_html_report(
                         <th>{L['trade_exit_price']}</th>
                         <th>{L['trade_pnl_pct']}</th>
                         <th>{L['trade_pnl_amount']}</th>
-                        <th>Reason</th>
                     </tr>
                 </thead>
                 <tbody>
