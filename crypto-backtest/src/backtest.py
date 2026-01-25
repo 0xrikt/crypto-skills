@@ -89,6 +89,9 @@ LABELS = {
         'price': 'Price',
         'equity': 'Equity',
         'days': 'days',
+        'date_range': 'Date Range',
+        'original_idea': 'Original Strategy Idea',
+        'to': 'to',
     },
     'zh': {
         'title': '策略回测报告',
@@ -141,6 +144,9 @@ LABELS = {
         'price': '价格',
         'equity': '资金',
         'days': '天',
+        'date_range': '回测区间',
+        'original_idea': '原始策略想法',
+        'to': '至',
     }
 }
 
@@ -153,7 +159,7 @@ def fetch_ohlcv(
     symbol: str = "BTC/USDT",
     timeframe: str = "4h",
     days: int = 365,
-    exchange_id: str = "okx"
+    exchange_id: str = "binance"
 ) -> pd.DataFrame:
     """Fetch historical OHLCV data from exchange."""
     
@@ -903,26 +909,27 @@ def generate_html_report(
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
-            --bg-void: #05070a;
-            --bg-deep: #0a0e14;
-            --bg-surface: #111820;
-            --bg-elevated: #1a2332;
-            --bg-hover: #243044;
-            --text-primary: #e6edf3;
-            --text-secondary: #7d8590;
-            --text-muted: #484f58;
-            --accent-cyan: #00d9ff;
-            --accent-green: #00ff9d;
-            --accent-red: #ff4757;
-            --accent-gold: #ffd93d;
-            --accent-purple: #a855f7;
-            --gradient-cyan: linear-gradient(135deg, #00d9ff 0%, #0099ff 100%);
-            --gradient-green: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
-            --gradient-gold: linear-gradient(135deg, #ffd93d 0%, #ff9f43 100%);
-            --border-subtle: rgba(255,255,255,0.06);
-            --border-accent: rgba(0,217,255,0.3);
-            --glow-cyan: 0 0 30px rgba(0,217,255,0.3);
-            --glow-green: 0 0 30px rgba(0,255,157,0.3);
+            /* Light theme - clean and professional */
+            --bg-void: #f8fafc;
+            --bg-deep: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-elevated: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --accent-cyan: #0ea5e9;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-gold: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --gradient-cyan: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            --gradient-green: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --border-subtle: #e2e8f0;
+            --border-accent: rgba(14,165,233,0.4);
+            --glow-cyan: 0 4px 20px rgba(14,165,233,0.15);
+            --glow-green: 0 4px 20px rgba(16,185,129,0.15);
         }}
         
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -935,7 +942,7 @@ def generate_html_report(
             min-height: 100vh;
         }}
         
-        /* Animated background */
+        /* Subtle background pattern */
         .bg-pattern {{
             position: fixed;
             top: 0;
@@ -943,9 +950,8 @@ def generate_html_report(
             right: 0;
             bottom: 0;
             background: 
-                radial-gradient(ellipse at 20% 20%, rgba(0,217,255,0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(0,255,157,0.04) 0%, transparent 70%);
+                radial-gradient(ellipse at 20% 20%, rgba(14,165,233,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.03) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }}
@@ -980,14 +986,11 @@ def generate_html_report(
         }}
         
         .header h1 {{
-            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-size: clamp(2rem, 4vw, 3rem);
             font-weight: 700;
             letter-spacing: -0.02em;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-cyan) 50%, var(--accent-green) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
         }}
         
         .header-meta {{
@@ -1125,8 +1128,29 @@ def generate_html_report(
         
         /* Strategy Summary */
         .strategy-summary {{
-            border: 2px solid var(--accent-cyan);
-            background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(0, 217, 255, 0.05) 100%);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-surface);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }}
+        
+        .original-idea {{
+            background: var(--bg-elevated);
+            border-left: 4px solid var(--accent-cyan);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }}
+        
+        .original-idea strong {{
+            display: block;
+            font-style: normal;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
         }}
         
         .strategy-info-grid {{
@@ -1349,6 +1373,9 @@ def generate_html_report(
                 <h2>{L['strategy_summary']}</h2>
             </div>
             
+            <!-- Original Strategy Idea -->
+            {f'<div class="original-idea"><strong>{L["original_idea"]}</strong>"{config.get("description", "")}"</div>' if config.get('description') else ''}
+            
             <!-- Basic Info -->
             <div class="strategy-info-grid">
                 <div class="info-item">
@@ -1360,8 +1387,8 @@ def generate_html_report(
                     <span class="info-value">{config.get('timeframe', '4h')}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">{L['backtest_period']}</span>
-                    <span class="info-value">{config.get('days', 365)} {L['days']}</span>
+                    <span class="info-label">{L['date_range']}</span>
+                    <span class="info-value">{config.get('start_date', 'N/A')} {L['to']} {config.get('end_date', 'N/A')}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">{L['initial_capital']}</span>
@@ -1800,7 +1827,7 @@ def main():
     parser.add_argument('--symbol', default='BTC/USDT', help='Trading pair')
     parser.add_argument('--timeframe', default='4h', help='Candle timeframe')
     parser.add_argument('--days', type=int, default=365, help='Backtest period in days')
-    parser.add_argument('--exchange', default='okx', help='Exchange to fetch data from (okx, kucoin, kraken, coinbase, bybit)')
+    parser.add_argument('--exchange', default='binance', help='Exchange to fetch data from')
     parser.add_argument('--entry', default='rsi<30', help='Entry conditions (comma-separated)')
     parser.add_argument('--exit', default='rsi>70', help='Exit conditions (comma-separated)')
     parser.add_argument('--stop-loss', type=float, default=5, help='Stop loss percentage')
@@ -1810,6 +1837,7 @@ def main():
     parser.add_argument('--commission', type=float, default=0.1, help='Commission percentage')
     parser.add_argument('--output', default='report.html', help='Output HTML file')
     parser.add_argument('--name', default='Trading Strategy', help='Strategy name')
+    parser.add_argument('--description', default='', help='Original strategy idea in natural language')
     parser.add_argument('--lang', default='en', choices=['en', 'zh'], help='Report language (en/zh)')
     
     args = parser.parse_args()
@@ -1859,11 +1887,18 @@ def main():
     metrics = calculate_metrics(results, df)
     
     # Prepare config for report
+    # Get actual date range from data
+    start_date = df.index[0].strftime('%Y-%m-%d') if len(df) > 0 else 'N/A'
+    end_date = df.index[-1].strftime('%Y-%m-%d') if len(df) > 0 else 'N/A'
+    
     config = {
         'name': args.name,
+        'description': args.description,  # User's original strategy idea
         'symbol': args.symbol,
         'timeframe': args.timeframe,
         'days': args.days,
+        'start_date': start_date,
+        'end_date': end_date,
         'entry_str': args.entry,
         'exit_str': args.exit,
         'entry_display': [c.strip() for c in args.entry.split(',')],

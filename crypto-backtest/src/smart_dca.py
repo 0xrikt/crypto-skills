@@ -88,6 +88,9 @@ LABELS = {
         'fair_value': '🟡 Fair value',
         'overvalued': '🔴 Overvalued',
         'extreme_caution': '🔴🔴 Extreme caution',
+        'date_range': 'Date Range',
+        'to': 'to',
+        'original_idea': 'Original Strategy Idea',
     },
     'zh': {
         'title': '智能定投 vs 等额定投',
@@ -149,6 +152,9 @@ LABELS = {
         'fair_value': '🟡 合理估值',
         'overvalued': '🔴 高估',
         'extreme_caution': '🔴🔴 极度谨慎',
+        'date_range': '回测区间',
+        'to': '至',
+        'original_idea': '原始策略想法',
     }
 }
 
@@ -423,18 +429,20 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
-            --bg-void: #05070a;
-            --bg-deep: #0a0e14;
-            --bg-surface: #111820;
-            --bg-elevated: #1a2332;
-            --text-primary: #e6edf3;
-            --text-secondary: #7d8590;
-            --accent-cyan: #00d9ff;
-            --accent-green: #00ff9d;
-            --accent-red: #ff4757;
-            --accent-gold: #ffd93d;
-            --accent-purple: #a855f7;
-            --border-subtle: rgba(255,255,255,0.06);
+            /* Light theme - clean and professional */
+            --bg-void: #f8fafc;
+            --bg-deep: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-elevated: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --accent-cyan: #0ea5e9;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-gold: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --border-subtle: #e2e8f0;
         }}
         
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -450,8 +458,8 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
             position: fixed;
             inset: 0;
             background: 
-                radial-gradient(ellipse at 20% 20%, rgba(0,217,255,0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.06) 0%, transparent 50%);
+                radial-gradient(ellipse at 20% 20%, rgba(14,165,233,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.03) 0%, transparent 50%);
             pointer-events: none;
         }}
         
@@ -478,12 +486,10 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
         }}
         
         .header h1 {{
-            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-size: clamp(2rem, 4vw, 3rem);
             font-weight: 700;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-gold) 50%, var(--accent-green) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--text-primary);
         }}
         
         .header-meta {{
@@ -497,16 +503,37 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
         /* Strategy Summary */
         .strategy-summary {{
             background: var(--bg-surface);
-            border: 2px solid var(--accent-cyan);
+            border: 1px solid var(--border-subtle);
             border-radius: 20px;
             padding: 32px;
             margin-bottom: 48px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }}
         
         .strategy-summary h2 {{
             font-size: 1.25rem;
             margin-bottom: 24px;
             color: var(--text-primary);
+        }}
+        
+        .original-idea {{
+            background: var(--bg-elevated);
+            border-left: 4px solid var(--accent-cyan);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }}
+        
+        .original-idea strong {{
+            display: block;
+            font-style: normal;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
         }}
         
         .info-grid {{
@@ -743,6 +770,8 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
         <section class="strategy-summary">
             <h2>📋 {L['strategy_summary']}</h2>
             
+            {f'<div class="original-idea"><strong>{L["original_idea"]}</strong>"{config.get("description", "")}"</div>' if config.get('description') else ''}
+            
             <div class="info-grid">
                 <div class="info-item">
                     <span class="info-label">{L['symbol']}</span>
@@ -757,8 +786,8 @@ def generate_html_report(results: dict, config: dict, lang: str = 'en') -> str:
                     <span class="info-value">${config.get('base_amount', 200)}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">{L['backtest_period']}</span>
-                    <span class="info-value">{config.get('days', 1095)} {L['days']}</span>
+                    <span class="info-label">{L['date_range']}</span>
+                    <span class="info-value">{config.get('start_date', 'N/A')} {L['to']} {config.get('end_date', 'N/A')}</span>
                 </div>
             </div>
             
@@ -984,6 +1013,7 @@ def main():
     parser.add_argument('--base-amount', type=float, default=200, help='Base investment per period')
     parser.add_argument('--frequency', type=int, default=7, help='Investment frequency in days')
     parser.add_argument('--output', default='smart_dca_report.html', help='Output HTML file')
+    parser.add_argument('--description', default='', help='Original strategy idea in natural language')
     parser.add_argument('--lang', default='en', choices=['en', 'zh'], help='Report language (en/zh)')
     
     args = parser.parse_args()
@@ -1014,11 +1044,19 @@ def main():
     
     # Generate report
     print("📄 Generating report...")
+    
+    # Get actual date range from data
+    start_date = df.index[0].strftime('%Y-%m-%d') if len(df) > 0 else 'N/A'
+    end_date = df.index[-1].strftime('%Y-%m-%d') if len(df) > 0 else 'N/A'
+    
     config = {
         'symbol': args.symbol,
         'base_amount': args.base_amount,
         'frequency': args.frequency,
-        'days': args.days
+        'days': args.days,
+        'start_date': start_date,
+        'end_date': end_date,
+        'description': args.description,
     }
     html = generate_html_report(results, config, lang=args.lang)
     
