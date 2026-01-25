@@ -309,24 +309,29 @@ def parse_conditions(condition_str: str) -> List[Dict]:
     1. Simple comparison:
        "rsi<30", "price>sma50", "adx>=25"
     
-    2. Crossover/Crossunder:
+    2. Percentage-based reference:
+       "price<sma200_98pct" - Price below 98% of SMA200
+       "price>sma50_105pct" - Price above 105% of SMA50
+       "price<bb_lower" - Price below BB lower band
+    
+    3. Crossover/Crossunder:
        "macd_crossover" - MACD crosses above signal
        "ema9_cross_above_ema21" - EMA9 crosses above EMA21
        "price_crossunder_sma200" - Price crosses below SMA200
     
-    3. Consecutive periods:
+    4. Consecutive periods:
        "consecutive_up>=3" - 3+ consecutive up days
        "rsi<30_for_3" - RSI below 30 for 3 consecutive periods
     
-    4. Change/Turning:
+    5. Change/Turning:
        "rsi_turning_up" - RSI is increasing (change > 0)
        "macd_hist_turning_down" - MACD histogram decreasing
     
-    5. Percentile/Position:
+    6. Percentile/Position:
        "bb_pct<0.2" - Price in lower 20% of BB range
        "price_position_90<0.3" - Price in lower 30% of 90-day range
     
-    6. Distance from MA:
+    7. Distance from MA:
        "dist_sma200<-10" - Price 10% below SMA200
     """
     conditions = []
@@ -370,10 +375,23 @@ def parse_conditions(condition_str: str) -> List[Dict]:
             continue
         
         # Pattern: simple comparison like rsi<30, price>sma50
+        # Also supports percentage references: price<sma200_98pct, price>sma50_105pct
         match = re.match(r'(\w+)(>=|<=|>|<|==|=)(\w+(?:\.\d+)?)', cond)
         if match:
             indicator, op, value = match.groups()
             op = '==' if op == '=' else op
+            
+            # Check for percentage reference pattern: sma200_98pct, ema50_105pct
+            pct_match = re.match(r'(\w+)_(\d+)pct', value)
+            if pct_match:
+                ref_indicator, pct = pct_match.groups()
+                conditions.append({
+                    'indicator': indicator, 
+                    'op': op, 
+                    'ref': ref_indicator,
+                    'ref_pct': float(pct) / 100.0  # Convert 98 to 0.98
+                })
+                continue
             
             # Check if value is numeric or another indicator
             try:
@@ -529,6 +547,9 @@ def evaluate_condition(df: pd.DataFrame, condition: Dict) -> pd.Series:
         ref = condition['ref']
         if ref in df.columns:
             right = df[ref]
+            # Apply percentage multiplier if specified (e.g., sma200_98pct -> SMA200 * 0.98)
+            if 'ref_pct' in condition:
+                right = right * condition['ref_pct']
         else:
             return pd.Series(False, index=df.index)
     else:

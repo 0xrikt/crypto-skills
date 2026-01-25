@@ -124,42 +124,115 @@ When user describes a trading idea:
 
 ### Step 2: Present Complete Strategy for Confirmation
 
-**CRITICAL**: Show the full multi-factor strategy. Users should be impressed by the thoroughness.
+**CRITICAL**: Show the full multi-factor strategy in a structured, professional format. Users should be impressed by the thoroughness.
 
-Format:
+Format (use 5 standard sections: Data, Signal, Capital, Risk, Execution):
 
 ```markdown
 ## 📊 Strategy: [Descriptive Name]
 
 **Core Logic**: [One sentence explaining the edge]
 
-**Asset:** BTC/USDT  
-**Timeframe:** 4h  
-**Backtest Period:** 365 days
+---
 
-### Valuation/Signal Model:
+### 📈 DATA
 
-| Factor | Indicator | Condition | Weight |
-|--------|-----------|-----------|--------|
-| Momentum | RSI(14) | < 35 | 1.0 |
-| Trend | Price vs SMA(200) | Below | 1.0 |
-| ... | ... | ... | ... |
+| Parameter | Value |
+|-----------|-------|
+| **Primary Symbol** | BTC/USDT |
+| **Timeframe** | 4h |
+| **Backtest Period** | 365 days |
 
-**Entry Trigger:** Score ≥ X.X
-
-### Exit Conditions (ANY triggers):
-- [Condition 1]
-- [Condition 2]
-- Stop Loss: X%
-- Take Profit: X%
-
-### Risk Management:
-- Position Size: X% per trade
-- Max Drawdown Tolerance: X%
+**Indicators:**
+| Indicator | Parameters |
+|-----------|------------|
+| RSI | period: 14 |
+| SMA | period: 50, 200 |
+| Bollinger Bands | period: 20, std_dev: 2 |
 
 ---
-**Confirm to run backtest? Or let me know what to adjust.**
+
+### 🎯 SIGNAL
+
+**Entry Conditions (ALL must be met):**
+| # | Indicator | Operator | Value/Reference |
+|---|-----------|----------|-----------------|
+| 1 | RSI | < | 35 |
+| 2 | Price | < | BB_lower |
+| 3 | Price | < | SMA_98% |
+
+**Exit Conditions (ANY triggers exit):**
+| # | Indicator | Operator | Value/Reference |
+|---|-----------|----------|-----------------|
+| 1 | RSI | > | 70 |
+| 2 | Price | > | BB_upper |
+| 3 | Price | > | SMA_105% |
+
+**Execution Schedule:**
+- Frequency: every 4h
+- Check times: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
+
+---
+
+### 💰 CAPITAL
+
+| Parameter | Value |
+|-----------|-------|
+| Total Capital | $10,000 |
+| Allocation per Trade | $200 (fixed) or 10% (percentage) |
+| Reserve Ratio | 20% (kept as cash buffer) |
+| Max Drawdown Limit | 15% |
+
+---
+
+### ⚠️ RISK
+
+| Parameter | Value |
+|-----------|-------|
+| Stop Loss | 8% |
+| Take Profit | 15% (or trailing) |
+| Max Account Risk | 75% |
+| Max Positions | 1 |
+
+**Emergency Rules:**
+- If account drawdown > 15%: pause trading
+- If single trade loss > 8%: close position
+
+---
+
+### ⚙️ EXECUTION
+
+| Parameter | Value |
+|-----------|-------|
+| Order Type | market |
+| Position Side | long_only / long_short |
+| Leverage | 1x (spot) or 3x (perp) |
+| Position Sizing | fixed_amount: $200 |
+
+---
+
+**✅ Confirm to run backtest? Or let me know what to adjust.**
 ```
+
+### Key Principles for Strategy Presentation:
+
+1. **Indicator References**: Support percentage-based references
+   - `SMA_98%` = 98% of SMA value (buy below)
+   - `SMA_105%` = 105% of SMA value (sell above)
+   - `BB_lower`, `BB_upper`, `BB_middle` = Bollinger Band levels
+
+2. **Condition Logic**: Always specify clearly
+   - Entry: `ALL` conditions must be met (AND logic)
+   - Exit: `ANY` condition triggers (OR logic)
+
+3. **Risk Management**: Include emergency rules
+   - Account-level risk limits
+   - Position-level stop losses
+   - Reserve capital buffer
+
+4. **Be Specific**: Use exact numbers, not vague descriptions
+   - ❌ "buy when cheap"
+   - ✅ "buy when RSI < 35 AND price < SMA_98%"
 
 ### Step 3: Run Backtest
 
@@ -219,52 +292,130 @@ Based on results, proactively suggest:
 
 ## Strategy Templates Reference
 
-### Template 1: Multi-Factor Value Investing
-```
-Entry: Valuation Score ≥ 3.0
-  - RSI(14) < 35
-  - Price < SMA(200)
-  - Price < BB_Lower(20, 2)
-  - Drawdown from 90-day high > 25%
-  
-Exit: Valuation Score ≤ 0 OR Take Profit 20% OR Stop Loss 10%
-```
+### Template 1: Multi-Factor Value Buying
+
+**DATA:**
+- Symbol: BTC/USDT | Timeframe: 4h | Period: 365d
+- Indicators: RSI(14), SMA(200), BB(20,2), High_90
+
+**SIGNAL:**
+| Entry (ALL) | Exit (ANY) |
+|-------------|------------|
+| RSI < 35 | RSI > 65 |
+| Price < SMA200_98pct | Price > SMA200 |
+| Price < BB_lower | Price > BB_middle |
+| Drawdown > 25% | Stop Loss 10% |
+
+**RISK:** Stop 10% | Take Profit 25% | Position 10%
+
+---
 
 ### Template 2: Trend Following with Confirmation
-```
-Entry (ALL required):
-  - Price > SMA(200) [major trend]
-  - EMA(9) > EMA(21) [momentum]
-  - MACD > Signal [acceleration]
-  - ADX > 25 [trend strength]
 
-Exit (ANY triggers):
-  - EMA(9) < EMA(21)
-  - Price < SMA(50)
-  - Stop Loss: 8%
-```
+**DATA:**
+- Symbol: BTC/USDT | Timeframe: 4h | Period: 365d
+- Indicators: SMA(200), EMA(9,21,50), MACD, ADX
+
+**SIGNAL:**
+| Entry (ALL) | Exit (ANY) |
+|-------------|------------|
+| Price > SMA200 | EMA9 < EMA21 |
+| EMA9 > EMA21 | Price < SMA50 |
+| MACD > MACD_signal | MACD crossunder |
+| ADX > 25 | Stop Loss 8% |
+
+**RISK:** Stop 8% | Trailing Stop 3xATR | Position 15%
+
+---
 
 ### Template 3: Volume-Confirmed Breakout
-```
-Entry (ALL required):
-  - Price breaks above 20-day high
-  - Volume > 2x average
-  - RSI(14) between 50-75
-  - BB Width was contracting (coiling)
 
-Exit:
-  - Price < EMA(21)
-  - Or trailing stop 3x ATR
-```
+**DATA:**
+- Symbol: BTC/USDT | Timeframe: 1h | Period: 180d
+- Indicators: High_20, Volume_MA(20), RSI(14), BB(20,2)
+
+**SIGNAL:**
+| Entry (ALL) | Exit (ANY) |
+|-------------|------------|
+| Price > High_20 | Price < EMA21 |
+| Volume > Volume_MA_200pct | RSI > 80 |
+| RSI between 50-75 | Stop Loss 5% |
+| BB_width contracting | Take Profit 15% |
+
+**RISK:** Stop 5% | Take Profit 15% | Position 20%
+
+---
 
 ### Template 4: Smart DCA
+
+**DATA:**
+- Symbol: BTC/USDT | Timeframe: 1d | Frequency: Weekly
+
+**SIGNAL (Valuation-Based Allocation):**
+| Score | Market State | Allocation |
+|-------|--------------|------------|
+| ≥ +3 | 🟢🟢 Strong buy zone | Base × 2.0 |
+| +1.5 to +3 | 🟢 Undervalued | Base × 1.5 |
+| -1.5 to +1.5 | 🟡 Fair value | Base × 1.0 |
+| -3 to -1.5 | 🔴 Overvalued | Base × 0.5 |
+| ≤ -3 | 🔴🔴 Extreme caution | Base × 0.25 |
+
+**CAPITAL:** Base $200/week | Reserve 20% | Max DD 15%
+
+---
+
+### Template 5: Example from User (Professional Format)
+
+**DATA:**
+```yaml
+indicators:
+  BB: { period: 20, std_dev: 2 }
+  RSI: { period: 14 }
+  SMA: { period: 50 }
+timeframe: 2h
+symbol: BTC-PERP
 ```
-Weekly buy with dynamic sizing:
-  - Valuation Score ≥ 3: Buy 2x base
-  - Score 1.5-3: Buy 1.5x base
-  - Score -1.5 to 1.5: Buy 1x base
-  - Score -3 to -1.5: Buy 0.5x base
-  - Score ≤ -3: Buy 0.25x base
+
+**SIGNAL:**
+```yaml
+entry_conditions (ALL):
+  - RSI < 35
+  - Price < BB_lower  
+  - Price < SMA_98pct
+
+exit_conditions (ANY):
+  - RSI > 70
+  - Price > BB_upper
+  - Price > SMA_105pct
+
+execution_schedule:
+  frequency: 2h
+  check_times: [00:00, 02:00, 04:00, ..., 22:00]
+```
+
+**CAPITAL:**
+```yaml
+total_capital: 1000
+allocation_per_trade: 200
+reserve_ratio: 0.2
+max_drawdown_limit: 0.15
+```
+
+**RISK:**
+```yaml
+stop_loss: 8%
+take_profit: null (exit by signal)
+max_account_risk: 75%
+emergency_rules:
+  account_risk_threshold: 0.8 → close_all
+```
+
+**EXECUTION:**
+```yaml
+leverage: 3x
+order_type: market
+position_side: long_only
+max_positions: 1
 ```
 
 ---
