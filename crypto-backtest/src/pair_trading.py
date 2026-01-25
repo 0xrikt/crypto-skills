@@ -73,7 +73,7 @@ LABELS = {
         'pnl': 'P&L',
         'buy': 'BUY',
         'sell': 'SELL',
-        'tagline': 'Democratizing algorithmic crypto trading',
+        'tagline': 'Validate your trading ideas in minutes',
         'share_cta': 'Found this useful? Share it with fellow traders!',
         'generated': 'Generated',
         'disclaimer': 'Past performance ≠ future results',
@@ -124,7 +124,7 @@ LABELS = {
         'pnl': '盈亏',
         'buy': '买入',
         'sell': '卖出',
-        'tagline': '让算法加密交易人人可用',
+        'tagline': '几分钟验证你的交易策略想法',
         'share_cta': '觉得有用？分享给其他交易者吧！',
         'generated': '生成时间',
         'disclaimer': '历史表现不代表未来收益',
@@ -197,13 +197,16 @@ def calculate_spread(df_a: pd.DataFrame, df_b: pd.DataFrame, lookback: int = 20)
     return df.dropna()
 
 
-def generate_signals(df: pd.DataFrame, threshold: float = 10.0, exit_threshold: float = 2.0) -> pd.DataFrame:
+def generate_signals(df: pd.DataFrame, threshold: float = 10.0, exit_threshold: float = 2.0, only_long: str = 'both') -> pd.DataFrame:
     """
     Generate trading signals based on spread deviation.
     
     - Long B when spread > threshold (A outperforming, expect B to catch up)
     - Long A when spread < -threshold (B outperforming, expect A to catch up)
     - Exit when spread returns to within ±exit_threshold of mean
+    
+    Args:
+        only_long: 'A' = only long A, 'B' = only long B, 'both' = trade both directions
     """
     df = df.copy()
     df['signal'] = 0  # 0 = no position, 1 = long A, 2 = long B
@@ -216,12 +219,12 @@ def generate_signals(df: pd.DataFrame, threshold: float = 10.0, exit_threshold: 
         
         if position == 0:
             # No position - check for entry
-            if spread > threshold:
+            if spread > threshold and only_long in ['B', 'both']:
                 # A significantly outperforming B → Long B
                 position = 2
                 df.iloc[i, df.columns.get_loc('signal')] = 2
                 df.iloc[i, df.columns.get_loc('target_asset')] = 'B'
-            elif spread < -threshold:
+            elif spread < -threshold and only_long in ['A', 'both']:
                 # B significantly outperforming A → Long A
                 position = 1
                 df.iloc[i, df.columns.get_loc('signal')] = 1
@@ -428,7 +431,7 @@ def run_backtest(df: pd.DataFrame, config: Dict) -> Tuple[Dict, List[Dict], pd.D
 
 def generate_html_report(df: pd.DataFrame, metrics: Dict, trades: List[Dict], 
                          equity_df: pd.DataFrame, config: Dict, lang: str = 'en') -> str:
-    """Generate HTML report."""
+    """Generate professional HTML report matching single-asset style."""
     
     L = LABELS.get(lang, LABELS['en'])
     
@@ -437,80 +440,86 @@ def generate_html_report(df: pd.DataFrame, metrics: Dict, trades: List[Dict],
     name_a = symbol_a.split('/')[0]
     name_b = symbol_b.split('/')[0]
     
-    # Create charts
-    # Convert timestamps to strings for JSON serialization
+    # Calculate additional metrics
+    initial_capital = config.get('initial_capital', 10000)
+    final_equity = metrics.get('final_equity', initial_capital)
+    total_profit = final_equity - initial_capital
+    
+    # Calculate drawdowns for chart
+    equities = equity_df['equity'].tolist()
+    peak = equities[0]
+    drawdowns = []
+    for eq in equities:
+        if eq > peak:
+            peak = eq
+        dd = (peak - eq) / peak * 100
+        drawdowns.append(-dd)
+    
+    # Prepare trade markers for spread chart and price chart
+    buy_times = []
+    buy_spreads = []
+    buy_prices_norm = []
+    sell_times = []
+    sell_spreads = []
+    sell_prices_norm = []
+    
+    for t in trades:
+        trade_time = t['date'].isoformat()
+        # Find closest values
+        if t['date'] in df.index:
+            spread_val = df.loc[t['date'], 'spread']
+            price_norm = df.loc[t['date'], 'price_b_norm']  # ETH normalized price
+        else:
+            # Find nearest index
+            idx = df.index.get_indexer([t['date']], method='nearest')[0]
+            spread_val = df.iloc[idx]['spread']
+            price_norm = df.iloc[idx]['price_b_norm']
+        
+        if t['action'] == 'BUY':
+            buy_times.append(trade_time)
+            buy_spreads.append(spread_val)
+            buy_prices_norm.append(price_norm)
+        else:
+            sell_times.append(trade_time)
+            sell_spreads.append(spread_val)
+            sell_prices_norm.append(price_norm)
+    
+    # Timestamps for charts
     timestamps = [ts.isoformat() for ts in df.index]
     equity_timestamps = [ts.isoformat() for ts in equity_df.index]
     
-    # 1. Price comparison chart
-    fig_price = go.Figure()
-    fig_price.add_trace(go.Scatter(
-        x=timestamps, y=df['price_a_norm'].tolist(),
-        name=name_a, line=dict(color='#f7931a', width=2)
-    ))
-    fig_price.add_trace(go.Scatter(
-        x=timestamps, y=df['price_b_norm'].tolist(),
-        name=name_b, line=dict(color='#627eea', width=2)
-    ))
-    fig_price.update_layout(
-        template='plotly_white',
-        height=400,
-        margin=dict(l=50, r=50, t=30, b=50),
-        legend=dict(orientation='h', yanchor='bottom', y=1.02),
-        yaxis_title='Normalized Price (Base=100)'
-    )
-    
-    # 2. Spread chart
-    fig_spread = go.Figure()
-    fig_spread.add_trace(go.Scatter(
-        x=timestamps, y=df['spread'].tolist(),
-        name='Spread', line=dict(color='#6366f1', width=1.5),
-        fill='tozeroy', fillcolor='rgba(99, 102, 241, 0.1)'
-    ))
-    
-    threshold = config.get('threshold', 10)
-    fig_spread.add_hline(y=threshold, line_dash='dash', line_color='#ef4444', 
-                         annotation_text=f'+{threshold}%')
-    fig_spread.add_hline(y=-threshold, line_dash='dash', line_color='#22c55e',
-                         annotation_text=f'-{threshold}%')
-    fig_spread.add_hline(y=0, line_color='#9ca3af', line_width=1)
-    
-    fig_spread.update_layout(
-        template='plotly_white',
-        height=300,
-        margin=dict(l=50, r=50, t=30, b=50),
-        yaxis_title=f'{name_a} vs {name_b} Spread (%)'
-    )
-    
-    # 3. Equity curve
-    fig_equity = go.Figure()
-    fig_equity.add_trace(go.Scatter(
-        x=equity_timestamps, y=equity_df['equity'].tolist(),
-        name='Portfolio', line=dict(color='#10b981', width=2),
-        fill='tozeroy', fillcolor='rgba(16, 185, 129, 0.1)'
-    ))
-    fig_equity.update_layout(
-        template='plotly_white',
-        height=350,
-        margin=dict(l=50, r=50, t=30, b=50),
-        yaxis_title='Equity ($)'
-    )
-    
-    # Format trades table
+    # Format trades table (paired entry/exit)
     trades_html = ''
-    for t in trades[-50:]:  # Last 50 trades
-        pnl_class = 'positive' if t['pnl'] > 0 else 'negative' if t['pnl'] < 0 else ''
-        action_label = L['buy'] if t['action'] == 'BUY' else L['sell']
+    buy_trades = [t for t in trades if t['action'] == 'BUY']
+    sell_trades = [t for t in trades if t['action'] == 'SELL']
+    
+    for i, (buy, sell) in enumerate(zip(buy_trades, sell_trades)):
+        pnl_class = 'positive' if sell['pnl'] > 0 else 'negative'
+        pnl_pct = (sell['price'] - buy['price']) / buy['price'] * 100
+        asset_name = name_b if buy['asset'] == 'B' else name_a
         trades_html += f'''
         <tr>
-            <td>{t['date'].strftime('%Y-%m-%d %H:%M')}</td>
-            <td><span class="badge {'buy' if t['action']=='BUY' else 'sell'}">{action_label}</span></td>
-            <td>{t['asset']}</td>
-            <td>${t['price']:,.2f}</td>
-            <td>{t['qty']:.6f}</td>
-            <td class="{pnl_class}">{'+' if t['pnl'] > 0 else ''}${t['pnl']:,.2f}</td>
-        </tr>
-        '''
+            <td>{buy['date'].strftime('%Y-%m-%d %H:%M')}</td>
+            <td>{sell['date'].strftime('%Y-%m-%d %H:%M')}</td>
+            <td><span class="asset-badge">{asset_name}</span></td>
+            <td>${buy['price']:,.2f}</td>
+            <td>${sell['price']:,.2f}</td>
+            <td class="{pnl_class}">{pnl_pct:+.2f}%</td>
+            <td class="{pnl_class}">{'+' if sell['pnl'] > 0 else ''}${sell['pnl']:,.2f}</td>
+        </tr>'''
+    
+    # Determine colors
+    return_class = 'positive' if metrics['total_return'] > 0 else 'negative'
+    profit_class = 'positive' if total_profit > 0 else 'negative'
+    
+    # Only long info
+    only_long = config.get('only_long', 'both')
+    if only_long == 'B':
+        only_long_text = f"只做多 {name_b}" if lang == 'zh' else f"Long {name_b} only"
+    elif only_long == 'A':
+        only_long_text = f"只做多 {name_a}" if lang == 'zh' else f"Long {name_a} only"
+    else:
+        only_long_text = "双向交易" if lang == 'zh' else "Both directions"
     
     html = f'''<!DOCTYPE html>
 <html lang="{lang}">
@@ -522,224 +531,312 @@ def generate_html_report(df: pd.DataFrame, metrics: Dict, trades: List[Dict],
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {{
-            --bg-void: #ffffff;
-            --bg-deep: #f0f2f5;
+            --bg-void: #f8fafc;
+            --bg-deep: #ffffff;
             --bg-surface: #ffffff;
-            --bg-elevated: #e8eaed;
-            --bg-hover: #d0d2d6;
-            --text-primary: #1a1a1a;
-            --text-secondary: #555555;
-            --text-muted: #888888;
+            --bg-elevated: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --accent-cyan: #0ea5e9;
             --accent-btc: #f7931a;
             --accent-eth: #627eea;
             --accent-green: #10b981;
             --accent-red: #ef4444;
-            --accent-purple: #6366f1;
-            --border-subtle: rgba(0,0,0,0.1);
+            --accent-gold: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --gradient-pair: linear-gradient(135deg, #f7931a 0%, #627eea 100%);
+            --border-subtle: #e2e8f0;
+            --border-accent: rgba(14,165,233,0.4);
+            --glow-cyan: 0 4px 20px rgba(14,165,233,0.15);
         }}
         
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         
         body {{
-            font-family: 'Space Grotesk', sans-serif;
-            background: var(--bg-deep);
+            font-family: 'Space Grotesk', -apple-system, sans-serif;
+            background: var(--bg-void);
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
         }}
         
+        .bg-pattern {{
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(247,147,26,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(98,126,234,0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }}
+        
         .container {{
+            position: relative;
+            z-index: 1;
             max-width: 1400px;
             margin: 0 auto;
             padding: 40px 24px;
         }}
         
+        /* Header */
         .header {{
             text-align: center;
+            padding: 60px 0;
+            border-bottom: 1px solid var(--border-subtle);
             margin-bottom: 48px;
         }}
         
-        .header-badge {{
-            display: inline-block;
-            padding: 8px 20px;
-            background: linear-gradient(135deg, var(--accent-btc) 0%, var(--accent-eth) 100%);
-            color: white;
-            border-radius: 20px;
+        .header-subtitle {{
             font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
         }}
         
-        .header h1 {{
-            font-size: 2.5rem;
+        .header-title {{
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
             font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--accent-btc) 0%, var(--accent-eth) 100%);
+            margin-bottom: 16px;
+            background: var(--gradient-pair);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }}
         
-        .header-subtitle {{
+        .header-desc {{
+            max-width: 700px;
+            margin: 0 auto 20px;
             color: var(--text-secondary);
             font-size: 1.1rem;
+            line-height: 1.5;
         }}
         
         .header-meta {{
             display: flex;
             justify-content: center;
             gap: 24px;
-            margin-top: 16px;
             flex-wrap: wrap;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
         }}
         
         .header-meta span {{
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }}
-        
-        .strategy-summary {{
-            background: var(--bg-surface);
-            border: 2px solid var(--accent-purple);
-            border-radius: 20px;
-            padding: 32px;
-            margin-bottom: 48px;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
-        }}
-        
-        .strategy-summary h2 {{
-            font-size: 1.5rem;
-            margin-bottom: 24px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 6px;
         }}
         
-        .original-idea {{
-            background: var(--bg-elevated);
-            border-left: 4px solid var(--accent-btc);
-            padding: 16px 20px;
-            margin-bottom: 24px;
-            border-radius: 8px;
-            font-style: italic;
-            color: var(--text-secondary);
+        .header-meta .dot {{
+            width: 5px;
+            height: 5px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
         }}
         
-        .original-idea strong {{
-            color: var(--text-primary);
-            display: block;
-            margin-bottom: 8px;
-            font-style: normal;
-        }}
-        
-        .info-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }}
-        
-        .info-item {{
-            background: var(--bg-deep);
-            padding: 16px;
-            border-radius: 12px;
-        }}
-        
-        .info-label {{
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }}
-        
-        .info-value {{
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }}
-        
-        .logic-box {{
-            background: var(--bg-deep);
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 4px solid var(--accent-purple);
-        }}
-        
-        .logic-box h3 {{
-            font-size: 1rem;
-            margin-bottom: 12px;
-            color: var(--accent-purple);
-        }}
-        
-        .logic-box p {{
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }}
-        
-        .metrics-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-            margin-bottom: 48px;
-        }}
-        
-        .metric-card {{
-            background: var(--bg-surface);
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-            border: 1px solid var(--border-subtle);
-        }}
-        
-        .metric-card.highlight {{
-            border: 2px solid var(--accent-green);
-            background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(16, 185, 129, 0.05) 100%);
-        }}
-        
-        .metric-value {{
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }}
-        
-        .metric-value.positive {{ color: var(--accent-green); }}
-        .metric-value.negative {{ color: var(--accent-red); }}
-        
-        .metric-label {{
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }}
-        
+        /* Strategy Compact Grid - 3x2 */
         .section {{
             background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
             border-radius: 20px;
             padding: 32px;
             margin-bottom: 32px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         }}
         
-        .section h2 {{
-            font-size: 1.3rem;
-            margin-bottom: 24px;
+        .section-header {{
             display: flex;
             align-items: center;
             gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-subtle);
         }}
         
-        .chart-container {{
-            width: 100%;
+        .section-icon {{
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            font-size: 1.2rem;
+        }}
+        
+        .section h2 {{
+            font-size: 1.25rem;
+            font-weight: 600;
+        }}
+        
+        .strategy-compact {{
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, minmax(130px, auto));
+            gap: 12px;
+        }}
+        
+        @media (max-width: 900px) {{
+            .strategy-compact {{ 
+                grid-template-columns: repeat(2, 1fr); 
+                grid-template-rows: repeat(3, minmax(130px, auto));
+            }}
+        }}
+        
+        @media (max-width: 600px) {{
+            .strategy-compact {{ 
+                grid-template-columns: 1fr; 
+                grid-template-rows: repeat(6, auto);
+            }}
+        }}
+        
+        .strategy-block {{
+            background: var(--bg-elevated);
             border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }}
+        
+        .strategy-block h4 {{
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        
+        .param-row {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 0.85rem;
+        }}
+        
+        .param-row span {{
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }}
+        
+        .param-row code {{
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+        }}
+        
+        .param-row code.green {{ color: var(--accent-green); }}
+        .param-row code.red {{ color: var(--accent-red); }}
+        .param-row code.btc {{ color: var(--accent-btc); }}
+        .param-row code.eth {{ color: var(--accent-eth); }}
+        
+        /* Metrics Table */
+        .metrics-table-container {{
+            overflow-x: auto;
+            margin-bottom: 32px;
+        }}
+        
+        .metrics-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }}
+        
+        .metrics-table thead th {{
+            background: var(--bg-elevated);
+            padding: 16px 20px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.75rem;
+            border-bottom: 2px solid var(--border-subtle);
+        }}
+        
+        .metrics-table tbody tr {{
+            border-bottom: 1px solid var(--border-subtle);
+        }}
+        
+        .metrics-table tbody tr:hover {{
+            background: var(--bg-elevated);
+        }}
+        
+        .metrics-table td {{
+            padding: 14px 20px;
+        }}
+        
+        .metrics-table .metric-name {{
+            color: var(--text-secondary);
+            font-weight: 500;
+        }}
+        
+        .metrics-table .metric-val {{
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            text-align: right;
+        }}
+        
+        .metrics-table .metric-val.positive {{ color: var(--accent-green); }}
+        .metrics-table .metric-val.negative {{ color: var(--accent-red); }}
+        
+        /* Charts */
+        .chart-container {{
+            background: var(--bg-deep);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 32px;
+            min-height: 320px;
+            position: relative;
             overflow: hidden;
         }}
         
+        .chart-container:last-child {{
+            margin-bottom: 0;
+        }}
+        
+        .chart-label {{
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-left: 8px;
+        }}
+        
+        .charts-row {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }}
+        
+        @media (max-width: 992px) {{
+            .charts-row {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+        
+        .chart-half {{
+            min-height: auto;
+        }}
+        
+        .chart-half .chart-container {{
+            margin-bottom: 0;
+            min-height: 280px;
+        }}
+        
+        .trades-wrapper {{
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-subtle);
+        }}
+        
+        /* Trades Table */
         .trades-table {{
             width: 100%;
             border-collapse: collapse;
@@ -748,249 +845,397 @@ def generate_html_report(df: pd.DataFrame, metrics: Dict, trades: List[Dict],
         
         .trades-table th {{
             text-align: left;
-            padding: 12px 16px;
-            background: var(--bg-deep);
-            font-weight: 600;
+            padding: 14px 16px;
+            background: var(--bg-elevated);
             color: var(--text-secondary);
+            font-weight: 600;
             text-transform: uppercase;
-            font-size: 0.75rem;
             letter-spacing: 0.5px;
+            font-size: 0.75rem;
         }}
         
+        .trades-table th:first-child {{ border-radius: 8px 0 0 8px; }}
+        .trades-table th:last-child {{ border-radius: 0 8px 8px 0; }}
+        
         .trades-table td {{
-            padding: 12px 16px;
+            padding: 14px 16px;
             border-bottom: 1px solid var(--border-subtle);
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.85rem;
         }}
         
-        .trades-table tr:hover {{
-            background: var(--bg-deep);
+        .trades-table tr:hover td {{
+            background: var(--bg-hover);
         }}
-        
-        .badge {{
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }}
-        
-        .badge.buy {{ background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }}
-        .badge.sell {{ background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }}
         
         .positive {{ color: var(--accent-green); }}
         .negative {{ color: var(--accent-red); }}
         
-        .footer {{
-            text-align: center;
-            padding: 48px 24px;
-            margin-top: 48px;
+        .asset-badge {{
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(98,126,234,0.15) 0%, rgba(98,126,234,0.25) 100%);
+            color: var(--accent-eth);
         }}
         
-        .footer-brand {{
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 8px;
+        /* Footer */
+        .footer {{
+            margin-top: 48px;
+            padding: 32px 24px;
+            text-align: center;
+            border-top: 1px solid var(--border-subtle);
+            background: var(--bg-surface);
         }}
         
         .footer-tagline {{
-            color: var(--text-muted);
-            margin-bottom: 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 16px;
         }}
         
-        .footer-cta {{
-            display: inline-block;
-            padding: 12px 32px;
-            background: linear-gradient(135deg, var(--accent-btc) 0%, var(--accent-eth) 100%);
-            color: white;
+        .footer-github {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-secondary);
             text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            margin-bottom: 24px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
         }}
         
-        .footer-cta:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(247, 147, 26, 0.3);
+        .footer-github:hover {{
+            background: var(--bg-hover);
+            border-color: var(--border-accent);
+            color: var(--text-primary);
         }}
         
         .footer-note {{
-            font-size: 0.85rem;
+            margin-top: 16px;
             color: var(--text-muted);
-        }}
-        
-        @media (max-width: 768px) {{
-            .header h1 {{ font-size: 1.8rem; }}
-            .metrics-grid {{ grid-template-columns: repeat(2, 1fr); }}
-            .info-grid {{ grid-template-columns: 1fr; }}
+            font-size: 0.75rem;
         }}
     </style>
 </head>
 <body>
+    <div class="bg-pattern"></div>
+    
     <div class="container">
         <header class="header">
-            <div class="header-badge">⚡ Pair Trading</div>
-            <h1>{name_a} ↔ {name_b}</h1>
-            <div class="header-subtitle">{L['subtitle']}</div>
+            <div class="header-subtitle">{L['title']}</div>
+            <h1 class="header-title">{name_a} ↔ {name_b}</h1>
+            <p class="header-desc">"{config.get('description', L['no_description_provided'])}"</p>
             <div class="header-meta">
-                <span>📊 {config.get('timeframe', '4h')} {L['timeframe']}</span>
-                <span>📅 {config.get('days', 365)} {L['days']}</span>
-                <span>🔄 {metrics['total_trades']} {L['total_trades']}</span>
+                <span><div class="dot"></div>{config.get('timeframe', '4h')}</span>
+                <span><div class="dot"></div>{df.index.min().strftime('%Y-%m-%d')} → {df.index.max().strftime('%Y-%m-%d')}</span>
+                <span><div class="dot"></div>{metrics['total_trades']} trades</span>
             </div>
         </header>
         
-        <!-- Strategy Summary -->
-        <section class="strategy-summary">
-            <h2>📋 {L['strategy_summary']}</h2>
-            
-            <div class="original-idea">
-                <strong>{L['original_strategy_idea']}</strong>
-                "{config.get('description', L['no_description_provided'])}"
+        <!-- Strategy Summary - Compact 3x2 Grid -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon">📋</div>
+                <h2>{L['strategy_summary']}</h2>
             </div>
             
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">{L['symbol_a']}</span>
-                    <span class="info-value" style="color: var(--accent-btc);">{symbol_a}</span>
+            <div class="strategy-compact">
+                <div class="strategy-block">
+                    <h4>📊 DATA</h4>
+                    <div class="param-row"><span>{L['symbol_a']}</span><code class="btc">{name_a}</code></div>
+                    <div class="param-row"><span>{L['symbol_b']}</span><code class="eth">{name_b}</code></div>
+                    <div class="param-row"><span>{L['timeframe']}</span><code>{config.get('timeframe', '4h')}</code></div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">{L['symbol_b']}</span>
-                    <span class="info-value" style="color: var(--accent-eth);">{symbol_b}</span>
+                <div class="strategy-block">
+                    <h4>🟢 ENTRY</h4>
+                    <div class="param-row"><span>{L['threshold']}</span><code class="green">spread > {config.get('threshold', 3)}%</code></div>
+                    <div class="param-row"><span>Direction</span><code>{only_long_text}</code></div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">{L['backtest_period']}</span>
-                    <span class="info-value">{df.index.min().strftime('%Y-%m-%d')} {L['to']} {df.index.max().strftime('%Y-%m-%d')}</span>
+                <div class="strategy-block">
+                    <h4>🔴 EXIT</h4>
+                    <div class="param-row"><span>{L['exit_threshold']}</span><code>|spread| &lt; {config.get('exit_threshold', 1)}%</code></div>
+                    <div class="param-row"><span>{L['stop_loss']}</span><code class="red">-{config.get('stop_loss', 20)}%</code></div>
+                    <div class="param-row"><span>{L['take_profit']}</span><code class="green">+{config.get('take_profit', 20)}%</code></div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">{L['lookback']}</span>
-                    <span class="info-value">{config.get('lookback', 20)} {L['timeframe']}s</span>
+                <div class="strategy-block">
+                    <h4>💰 CAPITAL</h4>
+                    <div class="param-row"><span>{L['initial_capital']}</span><code>${config.get('initial_capital', 10000):,}</code></div>
+                    <div class="param-row"><span>{L['position_size']}</span><code>{config.get('position_size', 20)}%</code></div>
+                    <div class="param-row"><span>{L['commission']}</span><code>{config.get('commission', 0.1)}%</code></div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">{L['threshold']}</span>
-                    <span class="info-value">±{config.get('threshold', 10)}%</span>
+                <div class="strategy-block">
+                    <h4>📅 PERIOD</h4>
+                    <div class="param-row"><span>{'实际天数' if lang == 'zh' else 'Days'}</span><code>{(df.index.max() - df.index.min()).days}</code></div>
+                    <div class="param-row"><span>{'开始' if lang == 'zh' else 'Start'}</span><code>{df.index.min().strftime('%m-%d')}</code></div>
+                    <div class="param-row"><span>{'结束' if lang == 'zh' else 'End'}</span><code>{df.index.max().strftime('%m-%d')}</code></div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">{L['initial_capital']}</span>
-                    <span class="info-value">${config.get('initial_capital', 10000):,}</span>
+                <div class="strategy-block">
+                    <h4>⚙️ EXECUTION</h4>
+                    <div class="param-row"><span>Leverage</span><code>1x</code></div>
+                    <div class="param-row"><span>Order</span><code>Market</code></div>
+                    <div class="param-row"><span>Side</span><code>Long Only</code></div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">{L['position_size']}</span>
-                    <span class="info-value">{config.get('position_size', 20)}%</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">{L['stop_loss']} / {L['take_profit']}</span>
-                    <span class="info-value">-{config.get('stop_loss', 10)}% / +{config.get('take_profit', 25)}%</span>
-                </div>
-            </div>
-            
-            <div class="logic-box">
-                <h3>🎯 {L['strategy_logic']}</h3>
-                <p>{L['logic_desc'].format(a=name_a, b=name_b, t=config.get('threshold', 10))}</p>
-                <p>{L['exit_logic'].format(t=config.get('exit_threshold', 2))}</p>
             </div>
         </section>
         
-        <!-- Metrics -->
-        <div class="metrics-grid">
-            <div class="metric-card highlight">
-                <div class="metric-value {'positive' if metrics['total_return'] > 0 else 'negative'}">
-                    {'+' if metrics['total_return'] > 0 else ''}{metrics['total_return']:.1f}%
-                </div>
-                <div class="metric-label">{L['total_return']}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value" style="color: var(--accent-btc);">
-                    {'+' if metrics['buy_hold_return_a'] > 0 else ''}{metrics['buy_hold_return_a']:.1f}%
-                </div>
-                <div class="metric-label">{L['buy_hold_a'].format(a=name_a)}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value" style="color: var(--accent-eth);">
-                    {'+' if metrics['buy_hold_return_b'] > 0 else ''}{metrics['buy_hold_return_b']:.1f}%
-                </div>
-                <div class="metric-label">{L['buy_hold_b'].format(b=name_b)}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value negative">{metrics['max_drawdown']:.1f}%</div>
-                <div class="metric-label">{L['max_drawdown']}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{metrics['sharpe_ratio']:.2f}</div>
-                <div class="metric-label">{L['sharpe_ratio']}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{metrics['total_trades']}</div>
-                <div class="metric-label">{L['total_trades']}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{metrics['win_rate']:.0f}%</div>
-                <div class="metric-label">{L['win_rate']}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{metrics['profit_factor']:.2f}</div>
-                <div class="metric-label">{L['profit_factor']}</div>
-            </div>
-        </div>
-        
-        <!-- Price Comparison -->
+        <!-- Trade History with Charts -->
         <section class="section">
-            <h2>📈 {L['price_comparison']}</h2>
+            <div class="section-header">
+                <div class="section-icon">📈</div>
+                <h2>{L['trade_history']}</h2>
+            </div>
+            
+            <div class="chart-label">📊 {L['price_comparison']}</div>
             <div class="chart-container" id="price-chart"></div>
-        </section>
-        
-        <!-- Spread Chart -->
-        <section class="section">
-            <h2>📊 {L['relative_spread']}</h2>
+            
+            <div class="chart-label">📉 {L['relative_spread']}</div>
             <div class="chart-container" id="spread-chart"></div>
+            
+            <div class="trades-wrapper">
+            <table class="trades-table">
+                <thead>
+                    <tr>
+                        <th>{'入场时间' if lang == 'zh' else 'Entry'}</th>
+                        <th>{'出场时间' if lang == 'zh' else 'Exit'}</th>
+                        <th>{L['asset']}</th>
+                        <th>{'入场价' if lang == 'zh' else 'Entry $'}</th>
+                        <th>{'出场价' if lang == 'zh' else 'Exit $'}</th>
+                        <th>{'收益率' if lang == 'zh' else 'Return'}</th>
+                        <th>{L['pnl']}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {trades_html}
+                </tbody>
+            </table>
+            </div>
         </section>
         
-        <!-- Equity Curve -->
+        <!-- Performance Metrics Table -->
         <section class="section">
-            <h2>💰 {L['equity_curve']}</h2>
-            <div class="chart-container" id="equity-chart"></div>
-        </section>
-        
-        <!-- Trade History -->
-        <section class="section">
-            <h2>📝 {L['trade_history']}</h2>
-            <div style="overflow-x: auto;">
-                <table class="trades-table">
+            <div class="section-header">
+                <div class="section-icon">📊</div>
+                <h2>{L['performance_metrics']}</h2>
+            </div>
+            
+            <div class="metrics-table-container">
+                <table class="metrics-table">
                     <thead>
                         <tr>
-                            <th>{L['date']}</th>
-                            <th>{L['action']}</th>
-                            <th>{L['asset']}</th>
-                            <th>{L['price']}</th>
-                            <th>{L['amount']}</th>
-                            <th>{L['pnl']}</th>
+                            <th colspan="2">{'收益指标' if lang == 'zh' else 'Returns'}</th>
+                            <th colspan="2">{'风险指标' if lang == 'zh' else 'Risk'}</th>
+                            <th colspan="2">{'交易统计' if lang == 'zh' else 'Trading'}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {trades_html}
+                        <tr>
+                            <td class="metric-name">{L['total_return']}</td>
+                            <td class="metric-val {return_class}">{metrics['total_return']:+.2f}%</td>
+                            <td class="metric-name">{L['max_drawdown']}</td>
+                            <td class="metric-val negative">{metrics['max_drawdown']:.2f}%</td>
+                            <td class="metric-name">{L['total_trades']}</td>
+                            <td class="metric-val">{metrics['total_trades']}</td>
+                        </tr>
+                        <tr>
+                            <td class="metric-name">{L['buy_hold_a'].format(a=name_a)}</td>
+                            <td class="metric-val" style="color: var(--accent-btc);">{metrics['buy_hold_return_a']:+.2f}%</td>
+                            <td class="metric-name">{L['sharpe_ratio']}</td>
+                            <td class="metric-val">{metrics['sharpe_ratio']:.2f}</td>
+                            <td class="metric-name">{L['win_rate']}</td>
+                            <td class="metric-val {'positive' if metrics['win_rate'] > 50 else 'negative'}">{metrics['win_rate']:.0f}%</td>
+                        </tr>
+                        <tr>
+                            <td class="metric-name">{L['buy_hold_b'].format(b=name_b)}</td>
+                            <td class="metric-val" style="color: var(--accent-eth);">{metrics['buy_hold_return_b']:+.2f}%</td>
+                            <td class="metric-name">{L['profit_factor']}</td>
+                            <td class="metric-val">{metrics['profit_factor']:.2f}</td>
+                            <td class="metric-name">{L['trades_on_a'].format(a=name_a)}</td>
+                            <td class="metric-val">{metrics['trades_a']}</td>
+                        </tr>
+                        <tr>
+                            <td class="metric-name">{'最终权益' if lang == 'zh' else 'Final Equity'}</td>
+                            <td class="metric-val">${final_equity:,.2f}</td>
+                            <td class="metric-name">{'vs 持有' if lang == 'zh' else 'vs Hold'}</td>
+                            <td class="metric-val {return_class}">{metrics['total_return'] - metrics['buy_hold_return_b']:+.2f}%</td>
+                            <td class="metric-name">{L['trades_on_b'].format(b=name_b)}</td>
+                            <td class="metric-val">{metrics['trades_b']}</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </section>
         
+        <!-- Charts Row: Equity + Drawdown -->
+        <div class="charts-row">
+            <section class="section chart-half">
+                <div class="section-header">
+                    <div class="section-icon">💰</div>
+                    <h2>{L['equity_curve']}</h2>
+                </div>
+                <div class="chart-container" id="equity-chart"></div>
+            </section>
+            
+            <section class="section chart-half">
+                <div class="section-header">
+                    <div class="section-icon">📉</div>
+                    <h2>{L['max_drawdown']}</h2>
+                </div>
+                <div class="chart-container" id="drawdown-chart"></div>
+            </section>
+        </div>
+        
         <footer class="footer">
-            <div class="footer-brand">🚀 Crypto Backtest Skill</div>
             <div class="footer-tagline">{L['tagline']}</div>
-            <a href="https://github.com/0xrikt/crypto-skills" class="footer-cta" target="_blank">
-                ⭐ Star on GitHub
+            <a href="https://github.com/0xrikt/crypto-skills" target="_blank" class="footer-github">
+                <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                <span>github.com/0xrikt/crypto-skills</span>
             </a>
             <div class="footer-note">
-                {L['share_cta']}<br>
                 {L['generated']} {datetime.now().strftime('%Y-%m-%d %H:%M')} • {L['disclaimer']}
             </div>
         </footer>
     </div>
     
     <script>
-        Plotly.newPlot('price-chart', {json.dumps(fig_price.to_dict()['data'])}, {json.dumps(fig_price.to_dict()['layout'])});
-        Plotly.newPlot('spread-chart', {json.dumps(fig_spread.to_dict()['data'])}, {json.dumps(fig_spread.to_dict()['layout'])});
-        Plotly.newPlot('equity-chart', {json.dumps(fig_equity.to_dict()['data'])}, {json.dumps(fig_equity.to_dict()['layout'])});
+        const chartTheme = {{
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: {{ color: '#1e293b', family: 'Space Grotesk' }},
+            xaxis: {{ gridcolor: 'rgba(0,0,0,0.08)', zerolinecolor: 'rgba(0,0,0,0.15)' }},
+            yaxis: {{ gridcolor: 'rgba(0,0,0,0.08)', zerolinecolor: 'rgba(0,0,0,0.15)' }}
+        }};
+        
+        // Spread Chart with Trade Markers
+        Plotly.newPlot('spread-chart', [
+            {{
+                x: {json.dumps(timestamps)},
+                y: {json.dumps(df['spread'].tolist())},
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Spread',
+                line: {{ color: '#6366f1', width: 1.5 }},
+                fill: 'tozeroy',
+                fillcolor: 'rgba(99, 102, 241, 0.1)'
+            }},
+            {{
+                x: {json.dumps(buy_times)},
+                y: {json.dumps(buy_spreads)},
+                type: 'scatter',
+                mode: 'markers',
+                name: '{"买入" if lang == "zh" else "Buy"}',
+                marker: {{ symbol: 'triangle-up', size: 14, color: '#10b981', line: {{ color: '#059669', width: 2 }} }}
+            }},
+            {{
+                x: {json.dumps(sell_times)},
+                y: {json.dumps(sell_spreads)},
+                type: 'scatter',
+                mode: 'markers',
+                name: '{"卖出" if lang == "zh" else "Sell"}',
+                marker: {{ symbol: 'triangle-down', size: 14, color: '#f59e0b', line: {{ color: '#d97706', width: 2 }} }}
+            }}
+        ], {{
+            ...chartTheme,
+            height: 350,
+            margin: {{ t: 30, r: 50, b: 50, l: 70 }},
+            yaxis: {{ ...chartTheme.yaxis, title: '{name_a} vs {name_b} Spread (%)' }},
+            legend: {{ orientation: 'h', y: 1.1 }},
+            shapes: [
+                {{ type: 'line', y0: {config.get('threshold', 3)}, y1: {config.get('threshold', 3)}, x0: 0, x1: 1, xref: 'paper', line: {{ dash: 'dash', color: '#ef4444', width: 1 }} }},
+                {{ type: 'line', y0: -{config.get('threshold', 3)}, y1: -{config.get('threshold', 3)}, x0: 0, x1: 1, xref: 'paper', line: {{ dash: 'dash', color: '#22c55e', width: 1 }} }},
+                {{ type: 'line', y0: 0, y1: 0, x0: 0, x1: 1, xref: 'paper', line: {{ color: '#9ca3af', width: 1 }} }}
+            ]
+        }}, {{ responsive: true }});
+        
+        // Equity Chart
+        Plotly.newPlot('equity-chart', [{{
+            x: {json.dumps(equity_timestamps)},
+            y: {json.dumps(equities)},
+            type: 'scatter',
+            mode: 'lines',
+            fill: 'tozeroy',
+            fillcolor: 'rgba(16, 185, 129, 0.15)',
+            line: {{ color: '#10b981', width: 2 }},
+            name: 'Portfolio'
+        }}], {{
+            ...chartTheme,
+            height: 280,
+            margin: {{ t: 20, r: 20, b: 40, l: 70 }},
+            yaxis: {{ ...chartTheme.yaxis, title: 'Equity ($)', tickformat: '$,.0f' }},
+            shapes: [{{
+                type: 'line',
+                y0: {initial_capital}, y1: {initial_capital},
+                x0: 0, x1: 1, xref: 'paper',
+                line: {{ dash: 'dash', color: 'rgba(0,0,0,0.3)', width: 1 }}
+            }}]
+        }}, {{ responsive: true }});
+        
+        // Drawdown Chart
+        Plotly.newPlot('drawdown-chart', [{{
+            x: {json.dumps(equity_timestamps)},
+            y: {json.dumps(drawdowns)},
+            type: 'scatter',
+            mode: 'lines',
+            fill: 'tozeroy',
+            fillcolor: 'rgba(239, 68, 68, 0.15)',
+            line: {{ color: '#ef4444', width: 1.5 }},
+            name: 'Drawdown'
+        }}], {{
+            ...chartTheme,
+            height: 280,
+            margin: {{ t: 20, r: 20, b: 40, l: 70 }},
+            yaxis: {{ ...chartTheme.yaxis, title: 'Drawdown %', tickformat: '.1f' }}
+        }}, {{ responsive: true }});
+        
+        // Price Comparison Chart with Trade Markers
+        Plotly.newPlot('price-chart', [
+            {{
+                x: {json.dumps(timestamps)},
+                y: {json.dumps(df['price_a_norm'].tolist())},
+                type: 'scatter',
+                mode: 'lines',
+                name: '{name_a}',
+                line: {{ color: '#f7931a', width: 2 }}
+            }},
+            {{
+                x: {json.dumps(timestamps)},
+                y: {json.dumps(df['price_b_norm'].tolist())},
+                type: 'scatter',
+                mode: 'lines',
+                name: '{name_b}',
+                line: {{ color: '#627eea', width: 2 }}
+            }},
+            {{
+                x: {json.dumps(buy_times)},
+                y: {json.dumps(buy_prices_norm)},
+                type: 'scatter',
+                mode: 'markers',
+                name: '{"买入" if lang == "zh" else "Buy"}',
+                marker: {{ symbol: 'triangle-up', size: 12, color: '#10b981', line: {{ color: '#059669', width: 2 }} }}
+            }},
+            {{
+                x: {json.dumps(sell_times)},
+                y: {json.dumps(sell_prices_norm)},
+                type: 'scatter',
+                mode: 'markers',
+                name: '{"卖出" if lang == "zh" else "Sell"}',
+                marker: {{ symbol: 'triangle-down', size: 12, color: '#f59e0b', line: {{ color: '#d97706', width: 2 }} }}
+            }}
+        ], {{
+            ...chartTheme,
+            height: 320,
+            margin: {{ t: 30, r: 50, b: 50, l: 70 }},
+            yaxis: {{ ...chartTheme.yaxis, title: '{"标准化价格 (基准=100)" if lang == "zh" else "Normalized Price (Base=100)"}' }},
+            legend: {{ orientation: 'h', y: 1.12 }}
+        }}, {{ responsive: true }});
     </script>
 </body>
 </html>'''
@@ -1016,6 +1261,8 @@ def main():
     parser.add_argument('--output', default='pair_trading_report.html', help='Output HTML file')
     parser.add_argument('--lang', default='en', choices=['en', 'zh'], help='Report language')
     parser.add_argument('--description', default='', help='Original strategy description')
+    parser.add_argument('--only-long', default='both', choices=['A', 'B', 'both'], 
+                        help='Only long specific asset: A, B, or both (default: both)')
     
     args = parser.parse_args()
     
@@ -1032,7 +1279,8 @@ def main():
         'stop_loss': args.stop_loss,
         'take_profit': args.take_profit,
         'commission': args.commission,
-        'description': args.description
+        'description': args.description,
+        'only_long': args.only_long
     }
     
     print(f"\n{'='*60}")
@@ -1051,9 +1299,10 @@ def main():
     
     # Generate signals
     print("\n🎯 Generating signals...")
-    df = generate_signals(df, args.threshold, args.exit_threshold)
+    df = generate_signals(df, args.threshold, args.exit_threshold, args.only_long)
     signal_count = (df['signal'] != df['signal'].shift()).sum()
-    print(f"   ✓ Generated {signal_count} signal changes")
+    only_long_msg = f" (only long {args.only_long})" if args.only_long != 'both' else ""
+    print(f"   ✓ Generated {signal_count} signal changes{only_long_msg}")
     
     # Run backtest
     print("\n💰 Running backtest simulation...")

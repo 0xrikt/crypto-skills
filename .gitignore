@@ -1,0 +1,19 @@
+# Virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Generated reports (examples)
+*.html
+
+# Temp files
+*.tmp
