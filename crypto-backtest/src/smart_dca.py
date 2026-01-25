@@ -1034,6 +1034,18 @@ def main():
     df = fetch_ohlcv(args.symbol, '1d', args.days)
     print(f"   Got {len(df)} daily candles")
     
+    # Validate data - warn if significantly less than requested
+    if len(df) > 1:
+        actual_days = (df.index[-1] - df.index[0]).days
+        if actual_days < args.days * 0.5:
+            print()
+            print("⚠️  WARNING: Received much less data than requested!")
+            print(f"   Requested: {args.days} days")
+            print(f"   Received:  {actual_days} days ({len(df)} candles)")
+            print()
+            print("   💡 TIP: OKX ~90 day limit. Use --exchange kucoin or binance for longer backtests.")
+            print()
+    
     # Run simulation
     print("🧮 Running Smart DCA simulation...")
     results = simulate_smart_dca(df, args.base_amount, args.frequency)

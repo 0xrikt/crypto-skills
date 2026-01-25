@@ -2288,6 +2288,21 @@ def main():
     df = fetch_ohlcv(args.symbol, args.timeframe, args.days, args.exchange)
     print(f"   Got {len(df)} candles")
     
+    # Validate data - warn if significantly less than requested
+    if len(df) > 1:
+        actual_days = (df.index[-1] - df.index[0]).days
+        if actual_days < args.days * 0.5:  # Less than 50% of requested
+            print()
+            print("⚠️  WARNING: Received much less data than requested!")
+            print(f"   Requested: {args.days} days")
+            print(f"   Received:  {actual_days} days ({len(df)} candles)")
+            print(f"   Date range: {df.index[0].strftime('%Y-%m-%d')} to {df.index[-1].strftime('%Y-%m-%d')}")
+            print()
+            print("   💡 TIP: This is likely due to exchange data limits.")
+            print("   - OKX only provides ~60-90 days of history")
+            print("   - Use --exchange kucoin (~200 days) or --exchange binance (365+ days, if accessible)")
+            print()
+    
     # Calculate indicators
     print("📈 Calculating indicators...")
     indicator_config = {}

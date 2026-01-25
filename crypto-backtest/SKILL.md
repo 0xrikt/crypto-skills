@@ -30,6 +30,8 @@ You turn vague trading intuitions into **professional-grade, multi-dimensional s
 2. **Stop Loss > normal noise**: BTC daily vol is 3-5%, so stop loss should be 5-8%, not 2%.
 3. **Respect user's exact specs**: If user says "every 6 hours", use 6h, not 2h.
 4. **Spot only**: leverage = 1x, always. No perpetuals, no shorting.
+5. **Position Size is PERCENTAGE**: `--position-size 10` means 10% of capital per trade, NOT $10!
+6. **OKX data limit**: OKX only provides ~60-90 days of history. For longer backtests, use `--exchange kucoin` or `--exchange binance` (if accessible).
 
 ---
 
@@ -172,7 +174,7 @@ Signal:
 
 Capital:
   total_capital: 10000
-  allocation_per_trade: 200        # Fixed amount per trade
+  position_size_pct: 10            # 10% of capital per trade (NOT fixed dollar amount!)
   reserve_ratio: 0.2               # 20% kept as cash buffer
   max_drawdown_limit: 0.15         # 15% max drawdown
 
@@ -509,6 +511,31 @@ Conditions are comma-separated. Entry uses AND logic, Exit uses OR logic.
 3. **Match complexity to strategy** - DCA needs valuation model, trend following needs multi-TF
 4. **Be honest about limitations** - Past performance ≠ future results
 5. **Encourage iteration** - Backtesting is a process, not a one-shot
+
+---
+
+## ⚠️ CRITICAL: Exchange Data Limits
+
+**Different exchanges have different historical data limits!**
+
+| Exchange | Approximate Limit | Notes |
+|----------|-------------------|-------|
+| **OKX** | ~60-90 days | Default. Good for short-term backtests |
+| **KuCoin** | ~200 days | Good alternative for medium-term |
+| **Binance** | 1000+ days | Most data, but blocked in some regions |
+| **Bybit** | ~200 days | Good alternative |
+
+**If you need more than 90 days of data:**
+```bash
+# OKX default - will only get ~90 days even if you request 365
+python src/backtest.py --symbol BTC/USDT --days 365 ...
+
+# Use KuCoin for ~200 days (works in most regions)
+python src/backtest.py --symbol BTC/USDT --days 180 --exchange kucoin ...
+
+# Use Binance for 365+ days (if accessible in your region)
+python src/backtest.py --symbol BTC/USDT --days 365 --exchange binance ...
+```
 
 ---
 

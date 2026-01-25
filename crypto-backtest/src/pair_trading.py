@@ -157,6 +157,17 @@ def fetch_data(symbol: str, days: int, timeframe: str = '4h', exchange_id: str =
     df = df[~df.index.duplicated(keep='first')]
     
     print(f"   ✓ Loaded {len(df)} candles for {symbol}")
+    
+    # Validate data - warn if significantly less than requested
+    if len(df) > 1:
+        actual_days = (df.index[-1] - df.index[0]).days
+        if actual_days < days * 0.5:
+            print()
+            print(f"⚠️  WARNING: {symbol} - Received much less data than requested!")
+            print(f"   Requested: {days} days, Received: {actual_days} days")
+            print("   💡 TIP: OKX ~90 day limit. Use --exchange kucoin or binance for longer backtests")
+            print()
+    
     return df
 
 
@@ -1257,7 +1268,7 @@ def main():
     parser.add_argument('--stop-loss', type=float, default=10, help='Stop loss percentage')
     parser.add_argument('--take-profit', type=float, default=25, help='Take profit percentage')
     parser.add_argument('--commission', type=float, default=0.1, help='Commission percentage')
-    parser.add_argument('--exchange', default='okx', help='Exchange (default: okx)')
+    parser.add_argument('--exchange', default='okx', help='Exchange (default: okx). Note: OKX has ~90 day limit, use binance/kucoin for longer backtests')
     parser.add_argument('--output', default='pair_trading_report.html', help='Output HTML file')
     parser.add_argument('--lang', default='en', choices=['en', 'zh'], help='Report language')
     parser.add_argument('--description', default='', help='Original strategy description')

@@ -137,12 +137,12 @@ The HTML report features:
 --symbol        Trading pair (default: BTC/USDT)
 --timeframe     Candle timeframe: 1m, 5m, 15m, 1h, 4h, 1d (default: 4h)
 --days          Backtest period in days (default: 365)
---exchange      Exchange to fetch data from (default: okx). Options: okx, kucoin, kraken, coinbase, bybit
+--exchange      Exchange to fetch data from (default: okx). Options: okx, binance, kucoin, kraken, bybit. Note: OKX ~90 day limit
 --entry         Entry conditions, comma-separated (default: rsi<30)
 --exit          Exit conditions, comma-separated (default: rsi>70)
 --stop-loss     Stop loss percentage (default: 5)
 --take-profit   Take profit percentage (default: 15)
---position-size Position size as % of portfolio (default: 10)
+--position-size Position size as % of portfolio, NOT dollar amount (default: 10 = 10% per trade)
 --initial-capital Starting capital (default: 10000)
 --commission    Commission percentage (default: 0.1)
 --output        Output HTML file path
@@ -198,6 +198,19 @@ python src/pair_trading.py \
 | `--exit-threshold` | Exit threshold (spread % to close) | 2 |
 
 **Note:** This is a spot-only, long-only strategy. We go long the underperformer expecting mean reversion.
+
+## ⚠️ Exchange Data Limits
+
+**Different exchanges have different historical data limits!**
+
+| Exchange | Approximate Limit | Notes |
+|----------|-------------------|-------|
+| **OKX** | ~60-90 days | Default. Good for short-term backtests |
+| **KuCoin** | ~200 days | Good alternative for medium-term |
+| **Binance** | 1000+ days | Most data, but blocked in some regions |
+| **Bybit** | ~200 days | Good alternative |
+
+For backtests > 90 days, use `--exchange kucoin` or `--exchange binance` (if accessible).
 
 ## 🛠 Tech Stack
 
