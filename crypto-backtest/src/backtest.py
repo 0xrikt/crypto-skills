@@ -40,7 +40,7 @@ import pandas_ta as ta
 LABELS = {
     'en': {
         'title': 'Strategy Backtest Report',
-        'strategy_summary': 'Strategy Summary',
+        'strategy_summary': 'Complete Strategy',
         'strategy_config': 'Strategy Configuration',
         'symbol': 'Symbol',
         'timeframe': 'Timeframe',
@@ -95,7 +95,7 @@ LABELS = {
     },
     'zh': {
         'title': '策略回测报告',
-        'strategy_summary': '策略摘要',
+        'strategy_summary': '完整策略',
         'strategy_config': '策略配置',
         'symbol': '交易对',
         'timeframe': '时间周期',
@@ -1034,6 +1034,15 @@ def generate_html_report(
             border-radius: 50%;
         }}
         
+        .header-idea {{
+            max-width: 700px;
+            margin: 0 auto 20px;
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            line-height: 1.5;
+        }}
+        
         /* Metrics Grid */
         .metrics-hero {{
             display: grid;
@@ -1405,6 +1414,29 @@ def generate_html_report(
             min-height: 480px;
         }}
         
+        /* Side-by-side Charts */
+        .charts-row {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }}
+        
+        .chart-half {{
+            margin-bottom: 0;
+        }}
+        
+        .chart-half .chart-container {{
+            min-height: 280px;
+            margin-bottom: 0;
+        }}
+        
+        @media (max-width: 992px) {{
+            .charts-row {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+        
         /* Trades Table */
         .trades-table {{
             width: 100%;
@@ -1454,36 +1486,37 @@ def generate_html_report(
         /* Footer */
         .footer {{
             margin-top: 48px;
-            padding: 24px;
+            padding: 32px 24px;
             text-align: center;
             border-top: 1px solid var(--border-subtle);
+            background: var(--bg-surface);
+        }}
+        
+        .footer-tagline {{
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 12px;
         }}
         
         .footer-brand {{
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }}
-        
-        .footer-link {{
-            display: inline-block;
-            color: var(--accent-cyan);
-            font-family: 'JetBrains Mono', monospace;
             font-size: 0.9rem;
-            text-decoration: none;
-            padding: 6px 12px;
-            background: var(--bg-elevated);
-            border-radius: 6px;
-            transition: all 0.2s ease;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
         }}
         
-        .footer-link:hover {{
-            background: var(--bg-hover);
+        .footer-brand a {{
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 600;
+        }}
+        
+        .footer-brand a:hover {{
+            text-decoration: underline;
         }}
         
         .footer-note {{
-            margin-top: 16px;
+            margin-top: 8px;
             color: var(--text-muted);
             font-size: 0.8rem;
         }}
@@ -1505,23 +1538,21 @@ def generate_html_report(
         <header class="header">
             <div class="header-badge">{L['title']}</div>
             <h1>{config.get('name', 'Trading Strategy')}</h1>
+            {f'<p class="header-idea">"{config.get("description", "")}"</p>' if config.get('description') else ''}
             <div class="header-meta">
                 <span><div class="dot"></div>{config.get('symbol', 'BTC/USDT')}</span>
                 <span><div class="dot"></div>{config.get('timeframe', '4h')} {L['timeframe']}</span>
-                <span><div class="dot"></div>{config.get('days', 365)} days</span>
+                <span><div class="dot"></div>{config.get('actual_days', config.get('days', 365))} days</span>
                 <span><div class="dot"></div>{metrics['total_trades']} {L['total_trades'].lower()}</span>
             </div>
         </header>
         
-        <!-- Strategy Configuration - Compact Grid Layout -->
+        <!-- Complete Strategy Configuration -->
         <section class="section strategy-summary">
             <div class="section-header">
                 <div class="section-icon">📋</div>
                 <h2>{L['strategy_summary']}</h2>
             </div>
-            
-            <!-- Original Strategy Idea -->
-            {f'<div class="original-idea"><strong>{L["original_idea"]}</strong>"{config.get("description", "")}"</div>' if config.get('description') else ''}
             
             <div class="strategy-compact">
                 <div class="strategy-col">
@@ -1560,6 +1591,15 @@ def generate_html_report(
                     </div>
                 </div>
             </div>
+        </section>
+        
+        <!-- Price & Signals - Most visually impactful, right after strategy -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-icon">📈</div>
+                <h2>{L['price_signals']}</h2>
+            </div>
+            <div class="chart-container" id="price-chart"></div>
         </section>
         
         <!-- Performance Metrics - Professional Table Layout -->
@@ -1624,22 +1664,26 @@ def generate_html_report(
             </div>
         </section>
         
-        <section class="section">
-            <div class="section-header">
-                <div class="section-icon">📊</div>
-                <h2>{L['equity_curve']}</h2>
-            </div>
-            <div class="chart-container" id="equity-chart"></div>
-        </section>
+        <!-- Equity Curve & Drawdown - Side by side -->
+        <div class="charts-row">
+            <section class="section chart-half">
+                <div class="section-header">
+                    <div class="section-icon">📊</div>
+                    <h2>{L['equity_curve']}</h2>
+                </div>
+                <div class="chart-container" id="equity-chart"></div>
+            </section>
+            
+            <section class="section chart-half">
+                <div class="section-header">
+                    <div class="section-icon">📉</div>
+                    <h2>{L['max_drawdown']}</h2>
+                </div>
+                <div class="chart-container" id="drawdown-chart"></div>
+            </section>
+        </div>
         
-        <section class="section">
-            <div class="section-header">
-                <div class="section-icon">📉</div>
-                <h2>{L['max_drawdown']}</h2>
-            </div>
-            <div class="chart-container" id="drawdown-chart"></div>
-        </section>
-        
+        <!-- Trade History -->
         <section class="section">
             <div class="section-header">
                 <div class="section-icon">📋</div>
@@ -1662,19 +1706,11 @@ def generate_html_report(
             </table>
         </section>
         
-        <section class="section">
-            <div class="section-header">
-                <div class="section-icon">📈</div>
-                <h2>{L['price_signals']}</h2>
-            </div>
-            <div class="chart-container" id="price-chart"></div>
-        </section>
-        
         <footer class="footer">
-            <div class="footer-brand">Crypto Backtest Skill</div>
-            <a href="https://github.com/0xrikt/crypto-skills" class="footer-link" target="_blank">
-                github.com/0xrikt/crypto-skills
-            </a>
+            <div class="footer-tagline">{L['tagline']}</div>
+            <div class="footer-brand">
+                Created by <a href="https://github.com/0xrikt/crypto-skills" target="_blank">Crypto Backtest Skill</a>
+            </div>
             <div class="footer-note">
                 {L['generated']} {datetime.now().strftime('%Y-%m-%d %H:%M')} • {L['disclaimer']}
             </div>
@@ -2059,6 +2095,7 @@ def main():
     # Get actual date range from data
     start_date = df.index[0].strftime('%Y-%m-%d') if len(df) > 0 else 'N/A'
     end_date = df.index[-1].strftime('%Y-%m-%d') if len(df) > 0 else 'N/A'
+    actual_days = (df.index[-1] - df.index[0]).days if len(df) > 1 else 0
     
     config = {
         'name': args.name,
@@ -2066,6 +2103,7 @@ def main():
         'symbol': args.symbol,
         'timeframe': args.timeframe,
         'days': args.days,
+        'actual_days': actual_days,
         'start_date': start_date,
         'end_date': end_date,
         'entry_str': args.entry,
