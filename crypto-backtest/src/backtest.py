@@ -1371,6 +1371,20 @@ def generate_html_report(
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 24px;
+            min-height: 200px;
+            width: 100%;
+        }}
+        
+        .chart-container#equity-chart {{
+            min-height: 380px;
+        }}
+        
+        .chart-container#drawdown-chart {{
+            min-height: 250px;
+        }}
+        
+        .chart-container#price-chart {{
+            min-height: 480px;
         }}
         
         /* Trades Table */
@@ -1661,12 +1675,12 @@ def generate_html_report(
     </div>
     
     <script>
-        const darkTheme = {{
+        const chartTheme = {{
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: {{ color: '#e6edf3', family: 'Space Grotesk' }},
-            xaxis: {{ gridcolor: 'rgba(255,255,255,0.06)', zerolinecolor: 'rgba(255,255,255,0.1)' }},
-            yaxis: {{ gridcolor: 'rgba(255,255,255,0.06)', zerolinecolor: 'rgba(255,255,255,0.1)' }}
+            font: {{ color: '#1e293b', family: 'Space Grotesk' }},
+            xaxis: {{ gridcolor: 'rgba(0,0,0,0.08)', zerolinecolor: 'rgba(0,0,0,0.15)' }},
+            yaxis: {{ gridcolor: 'rgba(0,0,0,0.08)', zerolinecolor: 'rgba(0,0,0,0.15)' }}
         }};
         
         // Equity Chart
@@ -1676,21 +1690,21 @@ def generate_html_report(
             type: 'scatter',
             mode: 'lines',
             fill: 'tozeroy',
-            fillcolor: 'rgba(0,217,255,0.1)',
-            line: {{ color: '#00d9ff', width: 2 }},
+            fillcolor: 'rgba(14,165,233,0.15)',
+            line: {{ color: '#0ea5e9', width: 2 }},
             name: 'Portfolio Value'
         }}], {{
-            ...darkTheme,
+            ...chartTheme,
             height: 350,
-            margin: {{ t: 20, r: 20, b: 40, l: 60 }},
-            yaxis: {{ ...darkTheme.yaxis, title: 'Value ($)', tickformat: '$,.0f' }},
+            margin: {{ t: 20, r: 20, b: 40, l: 70 }},
+            yaxis: {{ ...chartTheme.yaxis, title: 'Value ($)', tickformat: '$,.0f' }},
             shapes: [{{
                 type: 'line',
                 y0: {metrics['initial_capital']},
                 y1: {metrics['initial_capital']},
                 x0: 0, x1: 1,
                 xref: 'paper',
-                line: {{ dash: 'dash', color: 'rgba(255,255,255,0.3)', width: 1 }}
+                line: {{ dash: 'dash', color: 'rgba(0,0,0,0.3)', width: 1 }}
             }}]
         }}, {{ responsive: true }});
         
@@ -1701,14 +1715,14 @@ def generate_html_report(
             type: 'scatter',
             mode: 'lines',
             fill: 'tozeroy',
-            fillcolor: 'rgba(255,71,87,0.2)',
-            line: {{ color: '#ff4757', width: 1 }},
+            fillcolor: 'rgba(239,68,68,0.15)',
+            line: {{ color: '#ef4444', width: 1.5 }},
             name: 'Drawdown'
         }}], {{
-            ...darkTheme,
-            height: 200,
-            margin: {{ t: 20, r: 20, b: 40, l: 60 }},
-            yaxis: {{ ...darkTheme.yaxis, title: 'Drawdown %', tickformat: '.1f' }}
+            ...chartTheme,
+            height: 220,
+            margin: {{ t: 20, r: 20, b: 40, l: 70 }},
+            yaxis: {{ ...chartTheme.yaxis, title: 'Drawdown %', tickformat: '.1f' }}
         }}, {{ responsive: true }});
         
         // Price Chart
@@ -1721,8 +1735,8 @@ def generate_html_report(
                 close: {json.dumps(df['close'].tolist())},
                 type: 'candlestick',
                 name: 'Price',
-                increasing: {{ line: {{ color: '#00ff9d' }} }},
-                decreasing: {{ line: {{ color: '#ff4757' }} }}
+                increasing: {{ line: {{ color: '#10b981' }} }},
+                decreasing: {{ line: {{ color: '#ef4444' }} }}
             }},
             {{
                 x: {json.dumps(buy_times)},
@@ -1730,7 +1744,7 @@ def generate_html_report(
                 type: 'scatter',
                 mode: 'markers',
                 name: 'Buy',
-                marker: {{ symbol: 'triangle-up', size: 14, color: '#00ff9d' }}
+                marker: {{ symbol: 'triangle-up', size: 14, color: '#10b981' }}
             }},
             {{
                 x: {json.dumps(sell_times)},
@@ -1738,14 +1752,14 @@ def generate_html_report(
                 type: 'scatter',
                 mode: 'markers',
                 name: 'Sell',
-                marker: {{ symbol: 'triangle-down', size: 14, color: '#ff4757' }}
+                marker: {{ symbol: 'triangle-down', size: 14, color: '#ef4444' }}
             }}
         ], {{
-            ...darkTheme,
-            height: 500,
-            margin: {{ t: 20, r: 20, b: 40, l: 60 }},
-            xaxis: {{ ...darkTheme.xaxis, rangeslider: {{ visible: false }} }},
-            yaxis: {{ ...darkTheme.yaxis, title: 'Price ($)', tickformat: '$,.0f' }},
+            ...chartTheme,
+            height: 450,
+            margin: {{ t: 20, r: 20, b: 40, l: 70 }},
+            xaxis: {{ ...chartTheme.xaxis, rangeslider: {{ visible: false }} }},
+            yaxis: {{ ...chartTheme.yaxis, title: 'Price ($)', tickformat: '$,.0f' }},
             legend: {{ orientation: 'h', y: 1.1 }}
         }}, {{ responsive: true }});
     </script>
