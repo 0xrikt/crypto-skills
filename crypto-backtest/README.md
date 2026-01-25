@@ -4,6 +4,8 @@
 
 Transform natural language trading ideas into validated strategies with professional backtesting, beautiful reports, and runnable code.
 
+> ⚠️ **Important**: This tool supports **SPOT trading strategies only**. No leverage, no shorting, no futures/perpetual contracts. All strategies are long-only (buy → hold → sell).
+
 ## ✨ Features
 
 - **Natural Language Input** - Describe strategies like "buy BTC when oversold, sell when overbought"
@@ -165,6 +167,37 @@ python src/smart_dca.py \
 Smart DCA uses a multi-factor valuation model:
 - RSI, SMA(200), Bollinger Bands, Drawdown, MACD
 - Adjusts investment amount based on valuation score
+
+## 🔄 Pair Trading / Relative Strength
+
+For strategies that trade based on relative performance between two assets:
+
+```bash
+python src/pair_trading.py \
+  --symbol-a BTC/USDT \
+  --symbol-b ETH/USDT \
+  --days 365 \
+  --timeframe 4h \
+  --lookback 20 \
+  --threshold 10 \
+  --exit-threshold 2 \
+  --output pair_trading_report.html \
+  --lang en
+```
+
+**Strategy Logic:**
+- When BTC significantly outperforms ETH (spread > threshold) → Long ETH (expect catch-up)
+- When ETH significantly outperforms BTC (spread < -threshold) → Long BTC (expect catch-up)
+- Exit when spread returns to mean (within ±exit-threshold%)
+
+**Parameters:**
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--lookback` | Period for calculating relative performance | 20 |
+| `--threshold` | Entry threshold (spread % deviation) | 10 |
+| `--exit-threshold` | Exit threshold (spread % to close) | 2 |
+
+**Note:** This is a spot-only, long-only strategy. We go long the underperformer expecting mean reversion.
 
 ## 🛠 Tech Stack
 

@@ -12,6 +12,8 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 
 Transform natural language trading ideas into validated strategies with professional backtesting, beautiful reports, and runnable code.
 
+> ⚠️ **SPOT ONLY**: This skill supports **spot trading strategies only**. No leverage, no shorting, no futures/perpetual contracts. All strategies are long-only (buy low → hold → sell high).
+
 ## Your Superpower
 
 You turn vague trading intuitions into **professional-grade, multi-dimensional strategies**. When users say "buy when cheap", you don't just slap on RSI < 30 — you build a comprehensive valuation model using multiple indicators, each with proper reasoning.
@@ -205,8 +207,8 @@ Format (use 5 standard sections: Data, Signal, Capital, Risk, Execution):
 | Parameter | Value |
 |-----------|-------|
 | Order Type | market |
-| Position Side | long_only / long_short |
-| Leverage | 1x (spot) or 3x (perp) |
+| Position Side | long_only (spot only) |
+| Leverage | 1x (no leverage, no margin) |
 | Position Sizing | fixed_amount: $200 |
 
 ---
@@ -364,7 +366,30 @@ Based on results, proactively suggest:
 
 ---
 
-### Template 5: Example from User (Professional Format)
+### Template 5: Pair Trading / Relative Strength
+
+**CONCEPT:** When two correlated assets (e.g., BTC & ETH) diverge significantly, 
+the underperformer tends to catch up. Trade this mean reversion.
+
+**DATA:**
+- Symbol A: BTC/USDT | Symbol B: ETH/USDT
+- Timeframe: 4h | Lookback: 20 periods
+
+**SIGNAL:**
+| Condition | Action |
+|-----------|--------|
+| Spread (A - B) > +10% | Long B (expect B to catch up) |
+| Spread (A - B) < -10% | Long A (expect A to catch up) |
+| Spread returns to ±2% | Exit position |
+
+**RISK:** Stop 10% | Take Profit 25% | Position 20%
+
+**NOTE:** This is SPOT ONLY (long-only). We go long the underperformer, 
+expecting it to catch up. No shorting the outperformer.
+
+---
+
+### Template 6: Example from User (Professional Format)
 
 **DATA:**
 ```yaml
@@ -412,7 +437,7 @@ emergency_rules:
 
 **EXECUTION:**
 ```yaml
-leverage: 3x
+leverage: 1x (spot only)
 order_type: market
 position_side: long_only
 max_positions: 1
@@ -556,6 +581,7 @@ Conditions are comma-separated. Entry uses AND logic, Exit uses OR logic.
 
 - Backtest engine: `src/backtest.py`
 - Smart DCA: `src/smart_dca.py`
+- Pair Trading: `src/pair_trading.py`
 - Output reports: current working directory
 - Generated code: current working directory
 
@@ -572,6 +598,29 @@ python src/smart_dca.py \
   --output smart_dca_report.html \
   --lang zh  # or --lang en based on user's language
 ```
+
+## Pair Trading / Relative Strength Usage
+
+For pair trading strategies that compare two assets (e.g., BTC vs ETH):
+
+```bash
+python src/pair_trading.py \
+  --symbol-a "BTC/USDT" \
+  --symbol-b "ETH/USDT" \
+  --days 365 \
+  --timeframe 4h \
+  --lookback 20 \
+  --threshold 10 \
+  --exit-threshold 2 \
+  --output pair_trading_report.html \
+  --lang zh  # or --lang en based on user's language \
+  --description "Long the underperformer when BTC/ETH spread deviates"
+```
+
+**Parameters:**
+- `--lookback`: Period for calculating relative performance (default: 20)
+- `--threshold`: Entry threshold - spread deviation % to trigger entry (default: 10)
+- `--exit-threshold`: Exit threshold - spread deviation % to close position (default: 2)
 
 ## Language Support
 
