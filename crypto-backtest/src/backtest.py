@@ -1069,13 +1069,14 @@ def generate_html_report(
     trades_html = ''
     for t in trades[-15:]:  # Last 15 trades
         pnl_class = 'positive' if t['pnl_pct'] > 0 else 'negative'
+        pnl_amount = t.get('pnl_amount', 0)
         trades_html += f'''
         <tr>
             <td>{str(t['entry_time'])[:16]}</td>
             <td>{str(t['exit_time'])[:16]}</td>
             <td>${t['entry_price']:,.2f}</td>
             <td>${t['exit_price']:,.2f}</td>
-            <td class="{pnl_class}">{t['pnl_pct']:+.2f}%</td>
+            <td class="{pnl_class}">{t['pnl_pct']:+.2f}% ({pnl_amount:+,.2f})</td>
             <td class="exit-reason">{t['exit_reason']}</td>
         </tr>'''
     
