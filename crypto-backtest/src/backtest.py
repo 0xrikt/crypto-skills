@@ -655,6 +655,7 @@ def simulate_portfolio(
     trades = []
     equity_curve = []
     current_trade = None
+    total_commission = 0.0  # Track total commission paid
     
     for i, (timestamp, row) in enumerate(df.iterrows()):
         price = row['close']
@@ -666,7 +667,10 @@ def simulate_portfolio(
             # Stop loss
             if pnl_pct <= -stop_loss_pct:
                 exit_price = entry_price * (1 - stop_loss_pct / 100)
-                proceeds = position * exit_price * (1 - commission_pct / 100)
+                gross_proceeds = position * exit_price
+                commission = gross_proceeds * commission_pct / 100
+                total_commission += commission
+                proceeds = gross_proceeds - commission
                 capital += proceeds
                 
                 if current_trade:
@@ -684,7 +688,10 @@ def simulate_portfolio(
             # Take profit
             elif pnl_pct >= take_profit_pct:
                 exit_price = entry_price * (1 + take_profit_pct / 100)
-                proceeds = position * exit_price * (1 - commission_pct / 100)
+                gross_proceeds = position * exit_price
+                commission = gross_proceeds * commission_pct / 100
+                total_commission += commission
+                proceeds = gross_proceeds - commission
                 capital += proceeds
                 
                 if current_trade:
@@ -704,7 +711,9 @@ def simulate_portfolio(
             # Buy
             position_value = capital * position_size_pct / 100
             actual_price = price * (1 + slippage_pct / 100)
-            cost = position_value * (1 + commission_pct / 100)
+            commission = position_value * commission_pct / 100
+            total_commission += commission
+            cost = position_value + commission
             
             if cost <= capital:
                 position = position_value / actual_price
@@ -721,7 +730,10 @@ def simulate_portfolio(
         elif row['exit_signal'] == 1 and position > 0:
             # Sell on signal
             actual_price = price * (1 - slippage_pct / 100)
-            proceeds = position * actual_price * (1 - commission_pct / 100)
+            gross_proceeds = position * actual_price
+            commission = gross_proceeds * commission_pct / 100
+            total_commission += commission
+            proceeds = gross_proceeds - commission
             pnl_pct = (actual_price - entry_price) / entry_price * 100
             capital += proceeds
             
@@ -749,7 +761,10 @@ def simulate_portfolio(
     # Close remaining position
     if position > 0:
         final_price = df.iloc[-1]['close']
-        proceeds = position * final_price * (1 - commission_pct / 100)
+        gross_proceeds = position * final_price
+        commission = gross_proceeds * commission_pct / 100
+        total_commission += commission
+        proceeds = gross_proceeds - commission
         pnl_pct = (final_price - entry_price) / entry_price * 100
         capital += proceeds
         
@@ -765,7 +780,8 @@ def simulate_portfolio(
         'trades': trades,
         'equity_curve': equity_curve,
         'final_equity': equity_curve[-1]['equity'] if equity_curve else initial_capital,
-        'initial_capital': initial_capital
+        'initial_capital': initial_capital,
+        'total_commission': total_commission
     }
 
 
@@ -843,11 +859,8 @@ def calculate_metrics(results: Dict, df: pd.DataFrame) -> Dict:
     else:
         avg_trade = best_trade = worst_trade = 0
     
-    # Volatility (annualized std of returns)
-    if len(equities) > 1:
-        volatility = std_return * np.sqrt(periods_per_year) * 100
-    else:
-        volatility = 0
+    # Get total commission from results
+    total_commission = results.get('total_commission', 0)
     
     return {
         'total_return_pct': round(total_return_pct, 2),
@@ -867,7 +880,7 @@ def calculate_metrics(results: Dict, df: pd.DataFrame) -> Dict:
         'avg_trade_pct': round(avg_trade, 2),
         'best_trade_pct': round(best_trade, 2),
         'worst_trade_pct': round(worst_trade, 2),
-        'volatility_pct': round(volatility, 2)
+        'total_commission': round(total_commission, 2)
     }
 
 
@@ -1580,6 +1593,36 @@ def generate_html_report(
         .metrics-table .metric-name {{
             color: var(--text-secondary);
             font-weight: 500;
+            position: relative;
+            cursor: help;
+        }}
+        
+        .metrics-table .metric-name[data-tooltip]:hover::after {{
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: var(--bg-surface);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }}
+        
+        .metrics-table .metric-name[data-tooltip]:hover::before {{
+            content: '';
+            position: absolute;
+            bottom: calc(100% - 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--text-primary);
+            z-index: 100;
         }}
         
         .metrics-table .metric-val {{
@@ -1871,43 +1914,43 @@ def generate_html_report(
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="metric-name">{L['total_return']}</td>
+                            <td class="metric-name" data-tooltip="{'策略总收益率 = (最终资金 - 初始资金) / 初始资金' if lang == 'zh' else 'Total profit/loss as % of initial capital'}">{L['total_return']}</td>
                             <td class="metric-val {return_class}">{metrics['total_return_pct']:+.2f}%</td>
-                            <td class="metric-name">{L['max_drawdown']}</td>
+                            <td class="metric-name" data-tooltip="{'最大回撤：从历史最高点到最低点的最大跌幅，衡量最坏情况下的亏损' if lang == 'zh' else 'Largest peak-to-trough decline, measures worst-case loss'}">{L['max_drawdown']}</td>
                             <td class="metric-val negative">-{metrics['max_drawdown_pct']:.2f}%</td>
-                            <td class="metric-name">{L['total_trades']}</td>
+                            <td class="metric-name" data-tooltip="{'回测期间完成的交易总次数（买入+卖出算一次）' if lang == 'zh' else 'Total number of completed trades (buy + sell = 1 trade)'}">{L['total_trades']}</td>
                             <td class="metric-val">{metrics['total_trades']}</td>
                         </tr>
                         <tr>
-                            <td class="metric-name">Buy & Hold</td>
+                            <td class="metric-name" data-tooltip="{'买入持有策略收益：在回测开始时买入并持有到结束的收益率' if lang == 'zh' else 'Return if you bought at start and held until end'}">Buy & Hold</td>
                             <td class="metric-val">{metrics['buy_hold_return_pct']:+.2f}%</td>
-                            <td class="metric-name">{L['sharpe_ratio']}</td>
+                            <td class="metric-name" data-tooltip="{'夏普比率：风险调整后收益，>1为好，>2为优秀' if lang == 'zh' else 'Risk-adjusted return. >1 is good, >2 is excellent'}">{L['sharpe_ratio']}</td>
                             <td class="metric-val">{metrics['sharpe_ratio']:.2f}</td>
-                            <td class="metric-name">{L['win_rate']}</td>
+                            <td class="metric-name" data-tooltip="{'胜率：盈利交易占总交易的百分比' if lang == 'zh' else 'Percentage of profitable trades'}">{L['win_rate']}</td>
                             <td class="metric-val {'positive' if metrics['win_rate_pct'] > 50 else 'negative'}">{metrics['win_rate_pct']:.1f}%</td>
                         </tr>
                         <tr>
-                            <td class="metric-name">vs B&H</td>
+                            <td class="metric-name" data-tooltip="{'策略收益 vs 买入持有收益的差值，正数表示跑赢大盘' if lang == 'zh' else 'Strategy return minus buy-and-hold. Positive = outperformed'}">vs B&H</td>
                             <td class="metric-val {vs_bh_class}">{vs_bh:+.2f}%</td>
-                            <td class="metric-name">{L['profit_factor']}</td>
+                            <td class="metric-name" data-tooltip="{'盈亏比：总盈利 / 总亏损，>1表示总体盈利' if lang == 'zh' else 'Gross profit / gross loss. >1 means overall profitable'}">{L['profit_factor']}</td>
                             <td class="metric-val">{metrics['profit_factor']}</td>
-                            <td class="metric-name">W/L Ratio</td>
+                            <td class="metric-name" data-tooltip="{'盈利交易数 / 亏损交易数' if lang == 'zh' else 'Winning trades vs losing trades count'}">W/L Ratio</td>
                             <td class="metric-val">{metrics['winning_trades']}W / {metrics['losing_trades']}L</td>
                         </tr>
                         <tr>
-                            <td class="metric-name">Final Equity</td>
+                            <td class="metric-name" data-tooltip="{'回测结束时的账户总资金' if lang == 'zh' else 'Account value at end of backtest'}">Final Equity</td>
                             <td class="metric-val">${metrics['final_equity']:,.0f}</td>
-                            <td class="metric-name">Avg Trade</td>
+                            <td class="metric-name" data-tooltip="{'所有交易的平均收益率' if lang == 'zh' else 'Average return per trade'}">Avg Trade</td>
                             <td class="metric-val">{metrics.get('avg_trade_pct', 0):+.2f}%</td>
-                            <td class="metric-name">Best Trade</td>
+                            <td class="metric-name" data-tooltip="{'单笔交易的最高收益率' if lang == 'zh' else 'Highest return from a single trade'}">Best Trade</td>
                             <td class="metric-val positive">{metrics.get('best_trade_pct', 0):+.2f}%</td>
                         </tr>
                         <tr>
-                            <td class="metric-name">Initial</td>
+                            <td class="metric-name" data-tooltip="{'回测开始时的初始资金' if lang == 'zh' else 'Starting capital for backtest'}">Initial</td>
                             <td class="metric-val">${metrics['initial_capital']:,.0f}</td>
-                            <td class="metric-name">Volatility</td>
-                            <td class="metric-val">{metrics.get('volatility_pct', 0):.2f}%</td>
-                            <td class="metric-name">Worst Trade</td>
+                            <td class="metric-name" data-tooltip="{'所有交易支付的手续费总额（含买入和卖出）' if lang == 'zh' else 'Total fees paid for all trades (buy + sell)'}">{'手续费' if lang == 'zh' else 'Commission'}</td>
+                            <td class="metric-val negative">${metrics.get('total_commission', 0):,.2f}</td>
+                            <td class="metric-name" data-tooltip="{'单笔交易的最大亏损' if lang == 'zh' else 'Largest loss from a single trade'}">Worst Trade</td>
                             <td class="metric-val negative">{metrics.get('worst_trade_pct', 0):+.2f}%</td>
                         </tr>
                     </tbody>
